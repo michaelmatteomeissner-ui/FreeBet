@@ -1,0 +1,3654 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KickAnalyse Pro – Bundesliga</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08090d;--bg2:#0f1117;--bg3:#161920;--bg4:#1c2028;--bo:rgba(255,255,255,.07);--bo2:rgba(255,255,255,.13);--ac:#e8ff47;--blue:#47c8ff;--tx:#eef0f5;--tx2:#8892a4;--tx3:#4a5468;--win:#3ddc84;--draw:#ffb347;--loss:#ff5a5a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh}
+
+header{background:rgba(8,9,13,.95);border-bottom:1px solid var(--bo);padding:0 1.5rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.hdr{max-width:1300px;margin:0 auto;display:flex;align-items:center;height:58px;gap:1rem}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-ball{width:32px;height:32px;background:var(--ac);border-radius:7px;display:grid;place-items:center}
+.logo-ball svg{width:18px;height:18px}
+.logo-txt{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:2px}
+.logo-txt em{color:var(--ac);font-style:normal}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:.6rem}
+.live-dot{display:flex;align-items:center;gap:5px;font-size:.68rem;font-family:'DM Mono',monospace;color:var(--tx3)}
+.live-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:#ff4f4f;animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.ref-btn{background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:.75rem;padding:.3rem .7rem;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s}
+.ref-btn:hover{border-color:var(--bo2);color:var(--tx)}
+.ref-btn svg{transition:.4s}
+.ref-btn.spin svg{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.page{max-width:1300px;margin:0 auto;padding:1.25rem 1.5rem}
+
+.stats{display:flex;gap:.7rem;margin-bottom:1.1rem;overflow-x:auto}
+.sc{background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:.7rem 1rem;flex-shrink:0;min-width:118px}
+.sc-val{font-family:'Bebas Neue',sans-serif;font-size:1.65rem;line-height:1}
+.sc-lbl{font-size:.65rem;color:var(--tx2);margin-top:2px}
+.sc-sub{font-size:.61rem;font-family:'DM Mono',monospace;margin-top:.18rem;color:var(--tx3)}
+
+nav{display:flex;gap:2px;margin-bottom:1.05rem}
+nav button{background:none;border:none;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;padding:.38rem .85rem;border-radius:6px;cursor:pointer;transition:.13s}
+nav button:hover{background:var(--bg3);color:var(--tx)}
+nav button.active{background:var(--bg4);color:var(--ac)}
+
+.sec{display:flex;align-items:center;gap:.5rem;margin-bottom:.85rem}
+.sec h2{font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:2px;color:var(--tx2);white-space:nowrap}
+.badge{font-size:.64rem;font-family:'DM Mono',monospace;background:var(--bg3);border:1px solid var(--bo);padding:2px 7px;border-radius:4px;color:var(--tx3)}
+.sec-line{flex:1;height:1px;background:var(--bo)}
+
+.layout{display:grid;grid-template-columns:1fr 340px;gap:1.1rem;align-items:start}
+
+.mcard{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;cursor:pointer;transition:.18s;position:relative;margin-bottom:.58rem;overflow:hidden}
+.mcard:hover{border-color:var(--bo2);transform:translateY(-1px);box-shadow:0 5px 18px rgba(0,0,0,.38)}
+.mcard.sel{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac),0 4px 20px rgba(232,255,71,.09)}
+.mc-top{display:flex;align-items:center;padding:.95rem 1.05rem;gap:.6rem}
+.tside{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0}
+.tside.r{flex-direction:row-reverse}
+.crest{width:36px;height:36px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.crest-fb{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:.5rem;font-weight:800;flex-shrink:0;border:2px solid #333;background:#111;color:#999}
+.tn{font-weight:600;font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-mid{text-align:center;min-width:62px;flex-shrink:0}
+.mc-time{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--tx3)}
+.mc-vs{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--tx3)}
+.mc-score{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:2px}
+.mc-date{font-size:.62rem;color:var(--tx3);margin-top:1px}
+.mc-bot{padding:.52rem 1.05rem .75rem;border-top:1px solid var(--bo)}
+.ptrack{display:flex;height:5px;border-radius:4px;overflow:hidden;gap:2px;margin-bottom:.35rem}
+.pw{background:var(--win);border-radius:3px 0 0 3px}
+.pd{background:var(--draw)}
+.pl{background:var(--loss);border-radius:0 3px 3px 0}
+.plrow{display:flex;justify-content:space-between}
+.pll{font-size:.62rem;font-family:'DM Mono',monospace}
+.pll.w{color:var(--win)}.pll.d{color:var(--draw)}.pll.l{color:var(--loss)}
+.mtags{display:flex;gap:.32rem;margin-top:.38rem;flex-wrap:wrap}
+.tag{font-size:.6rem;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace}
+.t-h{background:rgba(61,220,132,.12);color:var(--win)}
+.t-m{background:rgba(255,179,71,.12);color:var(--draw)}
+.t-l{background:rgba(255,90,90,.12);color:var(--loss)}
+.t-xg{background:rgba(71,200,255,.1);color:var(--blue)}
+.t-d{background:var(--bg3);color:var(--tx3)}
+
+.skel{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:10px;height:100px;margin-bottom:.58rem}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+.notice{background:rgba(255,179,71,.07);border:1px solid rgba(255,179,71,.22);border-radius:8px;padding:.8rem 1rem;font-size:.77rem;color:#ffb347;margin-bottom:.75rem}
+
+.dp{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1.05rem;position:sticky;top:65px;max-height:calc(100vh - 80px);overflow-y:auto}
+.dp::-webkit-scrollbar{width:3px}
+.dp::-webkit-scrollbar-thumb{background:var(--bo)}
+.dp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:230px;text-align:center;color:var(--tx3);gap:.6rem}
+.dp-empty svg{opacity:.18}
+
+.dp-mhdr{display:flex;justify-content:space-between;align-items:center;padding-bottom:.8rem;margin-bottom:.8rem;border-bottom:1px solid var(--bo)}
+.dp-team{display:flex;flex-direction:column;align-items:center;gap:.35rem;max-width:82px}
+.dp-crest{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
+.dp-tname{font-size:.68rem;font-weight:600;text-align:center;line-height:1.22}
+.dp-vs{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--tx3)}
+.dp-sec{font-size:.62rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);font-weight:600;margin:.85rem 0 .38rem}
+.srow{display:flex;align-items:center;gap:.42rem;margin-bottom:.42rem}
+.slbl{font-size:.66rem;color:var(--tx2);flex:1;white-space:nowrap}
+.strk{flex:2;height:4px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.sfill{height:100%;border-radius:3px;transition:width .6s ease}
+.sval{font-size:.66rem;font-family:'DM Mono',monospace;min-width:2.4rem;text-align:right}
+.fbadges{display:flex;gap:3px}
+.fb{width:19px;height:19px;border-radius:3px;display:grid;place-items:center;font-size:.58rem;font-weight:700}
+.fb-W{background:rgba(61,220,132,.2);color:var(--win)}
+.fb-D{background:rgba(255,179,71,.2);color:var(--draw)}
+.fb-L{background:rgba(255,90,90,.2);color:var(--loss)}
+.h2h-row{display:flex;align-items:center;gap:.45rem;padding:.35rem 0;border-bottom:1px solid var(--bo)}
+.h2h-row:last-child{border-bottom:none}
+.verdict{margin-top:.8rem;padding:.7rem .85rem;background:var(--bg3);border-radius:7px;border-left:3px solid var(--ac)}
+.verd-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:.2rem}
+.verd-txt{font-size:.76rem;font-weight:600;line-height:1.38}
+.btn-ac{background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.55rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.75rem;width:100%;margin-top:.8rem;transition:.15s}
+.btn-ac:hover{background:#d4e640}
+
+.tbl-wrap{overflow-x:auto}
+.bl-tbl{width:100%;border-collapse:collapse;font-size:.77rem}
+.bl-tbl th{padding:.4rem .62rem;text-align:left;font-size:.61rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);border-bottom:1px solid var(--bo);font-weight:600}
+.bl-tbl td{padding:.56rem .62rem;border-bottom:1px solid rgba(255,255,255,.03)}
+.bl-tbl tr:hover td{background:var(--bg3)}
+.rk{font-family:'DM Mono',monospace;color:var(--tx3);width:22px}
+.tcell{display:flex;align-items:center;gap:.48rem}
+.tc{width:18px;height:18px;object-fit:contain}
+.pts{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--ac)}
+.ucl td:first-child{border-left:3px solid #1a2980}
+.uel td:first-child{border-left:3px solid #e86d00}
+.rel td:first-child{border-left:3px solid var(--loss)}
+.fmini{display:flex;gap:2px}
+.fm{width:11px;height:11px;border-radius:2px;display:grid;place-items:center;font-size:.43rem;font-weight:800}
+
+.chat{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;overflow:hidden;margin-top:.85rem;grid-column:1/-1}
+.chat-hdr{padding:.75rem 1.05rem;border-bottom:1px solid var(--bo);display:flex;align-items:center;gap:.6rem}
+.chat-icon{width:29px;height:29px;background:linear-gradient(135deg,#e8ff47,#47c8ff);border-radius:7px;display:grid;place-items:center;font-size:.88rem;flex-shrink:0}
+.chat-title{font-size:.83rem;font-weight:600}
+.chat-sub{font-size:.64rem;color:var(--tx2)}
+.chat-msgs{padding:.95rem;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--bo)}
+.msg{display:flex;gap:.5rem;animation:fup .2s ease}
+@keyframes fup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.mav{width:25px;height:25px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:.7rem}
+.mav.ai{background:linear-gradient(135deg,#e8ff47,#47c8ff)}
+.mav.user{background:var(--bg4);border:1px solid var(--bo)}
+.mbub{padding:.52rem .78rem;border-radius:8px;max-width:78%;font-size:.77rem;line-height:1.52}
+.msg.ai .mbub{background:var(--bg3);border-bottom-left-radius:2px}
+.msg.user .mbub{background:rgba(232,255,71,.09);border:1px solid rgba(232,255,71,.16);border-bottom-right-radius:2px}
+.mbub strong{color:var(--ac)}
+.dots{display:flex;gap:3px;padding:.52rem .78rem;background:var(--bg3);border-radius:8px;border-bottom-left-radius:2px;width:fit-content}
+.dots span{width:4px;height:4px;border-radius:50%;background:var(--tx3);animation:td 1.1s infinite}
+.dots span:nth-child(2){animation-delay:.18s}
+.dots span:nth-child(3){animation-delay:.36s}
+@keyframes td{0%,60%,100%{opacity:.2;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.qbar{padding:.38rem 1.05rem .55rem;display:flex;gap:.38rem;flex-wrap:wrap}
+.qbtn{background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);font-size:.67rem;padding:.26rem .58rem;border-radius:5px;cursor:pointer;transition:.13s;font-family:'DM Sans',sans-serif}
+.qbtn:hover{border-color:rgba(232,255,71,.26);color:var(--ac)}
+.cin-row{display:flex;gap:.52rem;padding:.72rem 1.05rem;border-top:1px solid var(--bo)}
+.cin{flex:1;background:var(--bg3);border:1px solid var(--bo);border-radius:6px;padding:.48rem .78rem;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:.77rem;outline:none;transition:.15s}
+.cin:focus{border-color:rgba(232,255,71,.32)}
+.cin::placeholder{color:var(--tx3)}
+.csend{background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.48rem .92rem;font-weight:700;font-size:.77rem;cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.csend:hover{background:#d4e640}
+.csend:disabled{opacity:.38;cursor:not-allowed}
+
+/* ── WETTSCHEIN TRACKER ── */
+.slip-match-row{background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:.7rem .9rem;margin-bottom:.45rem;cursor:pointer;transition:.18s}
+.slip-match-row:hover{border-color:var(--bo2)}
+.slip-match-row.in-slip{border-color:var(--ac);background:rgba(232,255,71,.04)}
+.smr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.smr-teams{font-size:.82rem;font-weight:600}
+.smr-date{font-size:.65rem;color:var(--tx3);font-family:'DM Mono',monospace}
+.smr-tips{display:flex;gap:.35rem;flex-wrap:wrap}
+.tip-btn{font-size:.68rem;padding:.28rem .6rem;border-radius:5px;border:1px solid var(--bo);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s}
+.tip-btn:hover{border-color:var(--bo2);color:var(--tx)}
+.tip-btn.sel{border-color:var(--ac);background:rgba(232,255,71,.1);color:var(--ac);font-weight:600}
+.slip-panel{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1.05rem;position:sticky;top:65px}
+.slip-header{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:1.5px;color:var(--tx2);margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between}
+.slip-item{display:flex;align-items:flex-start;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--bo);gap:.5rem}
+.slip-item:last-of-type{border-bottom:none}
+.slip-teams{font-size:.76rem;font-weight:600;line-height:1.25}
+.slip-tip-lbl{font-size:.65rem;color:var(--tx2);margin-top:.15rem}
+.slip-remove{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.85rem;padding:0 .2rem;line-height:1;flex-shrink:0}
+.slip-remove:hover{color:var(--loss)}
+.slip-prob{background:var(--bg3);border-radius:7px;padding:.75rem;margin:.75rem 0;text-align:center}
+.slip-prob-val{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;line-height:1}
+.slip-prob-lbl{font-size:.65rem;color:var(--tx2);margin-top:.2rem}
+.slip-submit{width:100%;background:var(--ac);color:#08090d;border:none;border-radius:7px;padding:.6rem;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;margin-top:.6rem}
+.slip-submit:hover{background:#d4e640}
+.slip-submit:disabled{opacity:.35;cursor:not-allowed}
+.slip-empty{color:var(--tx3);font-size:.74rem;text-align:center;padding:1.5rem 0}
+/* submitted slips */
+.sub-slip{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:.9rem 1rem;margin-bottom:.7rem}
+.sub-slip-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.sub-slip-date{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--tx3)}
+.sub-slip-prob{font-family:'Bebas Neue',sans-serif;font-size:1.1rem}
+.sub-bet-row{display:flex;align-items:center;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--bo);font-size:.76rem;gap:.5rem}
+.sub-bet-row:last-child{border-bottom:none}
+.sub-bet-teams{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub-bet-tip{font-size:.65rem;color:var(--tx2)}
+.out-btn{font-size:.62rem;padding:2px 7px;border-radius:4px;border:1px solid;cursor:pointer;background:none;font-family:'DM Mono',monospace;transition:.15s;flex-shrink:0}
+.out-btn:hover{opacity:.75}
+.out-w{color:var(--win);border-color:rgba(61,220,132,.3)}
+.out-l{color:var(--loss);border-color:rgba(255,90,90,.3)}
+.out-d{color:var(--draw);border-color:rgba(255,179,71,.3)}
+.out-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.slip-result-bar{display:flex;gap:.45rem;margin-top:.55rem;font-size:.72rem}
+.sr-stat{background:var(--bg3);border-radius:5px;padding:.3rem .6rem;text-align:center;flex:1}
+.sr-val{font-family:'Bebas Neue',sans-serif;font-size:1.1rem}
+.tstat{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--bo);font-size:.72rem}
+.bign{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1}
+
+.news-card{background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:.85rem .92rem;margin-bottom:.55rem;transition:.15s}
+.news-card:hover{border-color:var(--bo2)}
+.ntag{display:inline-block;font-size:.59rem;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;margin-bottom:.3rem;background:rgba(232,255,71,.09);color:var(--ac)}
+.ntitle{font-size:.81rem;font-weight:600;line-height:1.3;margin-bottom:.3rem}
+.nbody{font-size:.72rem;color:var(--tx2);line-height:1.48}
+.nfoot{display:flex;justify-content:space-between;margin-top:.48rem;font-size:.62rem;color:var(--tx3)}
+.nsk{height:70px;border-radius:8px;margin-bottom:.55rem}
+
+
+/* API KEY BANNER */
+.api-banner{background:var(--bg2);border:1px solid rgba(232,255,71,.25);border-radius:10px;padding:1rem 1.15rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:.85rem;flex-wrap:wrap}
+.api-banner.ok{border-color:rgba(61,220,132,.3);background:rgba(61,220,132,.04)}
+.api-icon{width:34px;height:34px;background:rgba(232,255,71,.12);border-radius:8px;display:grid;place-items:center;font-size:1rem;flex-shrink:0}
+.api-text{flex:1;min-width:180px}
+.api-title{font-size:.8rem;font-weight:600;color:var(--ac);margin-bottom:.18rem}
+.api-sub{font-size:.7rem;color:var(--tx2)}
+.api-input-wrap{display:flex;gap:.45rem;flex:2;min-width:240px}
+.api-input{flex:1;background:var(--bg3);border:1px solid var(--bo);border-radius:6px;padding:.45rem .75rem;color:var(--tx);font-family:'DM Mono',monospace;font-size:.74rem;outline:none;transition:.15s;letter-spacing:.5px}
+.api-input:focus{border-color:rgba(232,255,71,.4)}
+.api-input::placeholder{color:var(--tx3);font-family:'DM Sans',sans-serif;letter-spacing:0}
+.api-save{background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.45rem .9rem;font-weight:700;font-size:.76rem;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;transition:.15s}
+.api-save:hover{background:#d4e640}
+.api-ok{font-size:.75rem;color:var(--win);font-weight:600;display:flex;align-items:center;gap:4px}
+.api-link{font-size:.68rem;color:var(--blue);text-decoration:none}
+.api-link:hover{text-decoration:underline}
+
+
+/* ── GRUPPENLIGA ── */
+.g-match{background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:.8rem .95rem;margin-bottom:.5rem;cursor:pointer;transition:.18s}
+.g-match:hover{border-color:var(--bo2);transform:translateY(-1px)}
+.g-match-teams{font-size:.84rem;font-weight:600;margin-bottom:.3rem}
+.g-match-meta{display:flex;justify-content:space-between;align-items:center}
+.g-match-date{font-size:.64rem;color:var(--tx3);font-family:'DM Mono',monospace}
+.g-odds-row{display:flex;gap:.3rem}
+.g-odd{font-size:.67rem;padding:.2rem .5rem;border-radius:4px;background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);font-family:'DM Mono',monospace}
+.g-odd.fav{color:var(--win);border-color:rgba(61,220,132,.25)}
+.lb-row{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--bo)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;width:22px;flex-shrink:0}
+.lb-name{flex:1;font-size:.78rem;font-weight:600}
+.lb-balance{font-family:'Bebas Neue',sans-serif;font-size:1rem}
+.lb-diff{font-size:.65rem;font-family:'DM Mono',monospace}
+.g-bet-card{background:var(--bg3);border-radius:7px;padding:.6rem .8rem;margin-bottom:.4rem;font-size:.74rem}
+.g-bet-top{display:flex;justify-content:space-between;font-weight:600;margin-bottom:.18rem}
+.g-bet-meta{font-size:.64rem;color:var(--tx2);display:flex;justify-content:space-between}
+.g-bet-pending{border-left:3px solid var(--draw)}
+.g-bet-won{border-left:3px solid var(--win);background:rgba(61,220,132,.06)}
+.g-bet-lost{border-left:3px solid var(--loss);background:rgba(255,90,90,.06)}
+.tip-sel-btn{padding:.45rem .7rem;border-radius:6px;border:1px solid var(--bo);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.74rem;transition:.15s;text-align:center}
+.tip-sel-btn:hover{border-color:var(--bo2);color:var(--tx)}
+.tip-sel-btn.active{border-color:var(--ac);background:rgba(232,255,71,.1);color:var(--ac);font-weight:600}
+
+
+/* Kombi-Quote Badge auf Tip-Buttons */
+.tip-btn .odds-chip{display:inline-block;margin-left:.3rem;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ac);opacity:.85}
+.tip-btn.sel .odds-chip{opacity:1}
+/* Kombi-Zusammenfassung im Schein-Item */
+.slip-item-odds{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--ac);flex-shrink:0}
+
+
+/* ── COUNTDOWN TIMER ── */
+.deadline-timer{display:flex;align-items:center;gap:.75rem;background:var(--bg2);border:1px solid rgba(232,255,71,.22);border-radius:10px;padding:.8rem 1rem;margin-bottom:.85rem}
+.timer-icon{font-size:1.3rem;flex-shrink:0}
+.timer-body{flex:1}
+.timer-label{font-size:.65rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.25rem}
+.timer-digits{display:flex;gap:.35rem;align-items:flex-end}
+.timer-block{text-align:center}
+.timer-num{font-family:'Bebas Neue',sans-serif;font-size:1.85rem;line-height:1;color:var(--ac);min-width:2.2rem;display:block;transition:color .3s}
+.timer-unit{font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px}
+.timer-sep{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--tx3);line-height:1.1;padding-bottom:.1rem}
+.timer-deadline{font-size:.68rem;color:var(--tx2);margin-top:.3rem}
+.timer-expired{color:var(--loss) !important}
+.timer-urgent .timer-num{color:var(--loss)}
+.timer-urgent{border-color:rgba(255,90,90,.35);animation:urgentPulse 1s infinite}
+@keyframes urgentPulse{0%,100%{border-color:rgba(255,90,90,.35)}50%{border-color:rgba(255,90,90,.7)}}
+.timer-done{background:rgba(255,90,90,.07);border-color:rgba(255,90,90,.3)}
+.timer-done .timer-icon{filter:grayscale(1)}
+
+
+/* ── ADMIN PANEL ── */
+.admin-panel{background:rgba(232,255,71,.04);border:1px solid rgba(232,255,71,.2);border-radius:10px;padding:1rem;margin-bottom:.85rem}
+.admin-title{font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:1.5px;color:var(--ac);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+.admin-section{margin-bottom:.85rem;padding-bottom:.85rem;border-bottom:1px solid var(--bo)}
+.admin-section:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.admin-sec-title{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);font-weight:600;margin-bottom:.5rem}
+.admin-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;flex-wrap:wrap}
+.admin-label{font-size:.75rem;color:var(--tx2);flex:1;min-width:120px}
+.admin-input{background:var(--bg3);border:1px solid var(--bo);border-radius:6px;padding:.38rem .7rem;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:.76rem;outline:none;width:90px;transition:.15s}
+.admin-input:focus{border-color:rgba(232,255,71,.35)}
+.admin-btn{font-size:.72rem;padding:.3rem .7rem;border-radius:5px;border:1px solid;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;background:none;white-space:nowrap}
+.admin-btn-ac{color:var(--ac);border-color:rgba(232,255,71,.3);background:rgba(232,255,71,.07)}
+.admin-btn-ac:hover{background:rgba(232,255,71,.14)}
+.admin-btn-del{color:var(--loss);border-color:rgba(255,90,90,.3)}
+.admin-btn-del:hover{background:rgba(255,90,90,.08)}
+.admin-btn-warn{color:var(--draw);border-color:rgba(255,179,71,.3)}
+.admin-btn-warn:hover{background:rgba(255,179,71,.07)}
+.member-row{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--bo)}
+.member-row:last-child{border-bottom:none}
+.member-name{flex:1;font-size:.78rem;font-weight:600}
+.member-bal{font-size:.72rem;font-family:'DM Mono',monospace;color:var(--ac);min-width:70px;text-align:right}
+.invite-link-box{background:var(--bg3);border:1px solid var(--bo);border-radius:6px;padding:.45rem .7rem;font-size:.68rem;font-family:'DM Mono',monospace;color:var(--blue);word-break:break-all;cursor:pointer;transition:.15s}
+.invite-link-box:hover{border-color:rgba(71,200,255,.4)}
+.admin-badge{background:rgba(232,255,71,.12);color:var(--ac);font-size:.6rem;padding:1px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-weight:600}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .dp{position:static;max-height:none}
+  .chat{grid-column:1}
+}
+/* ── MOBILE OPTIMIERUNG ── */
+@media(max-width:600px){
+  /* Header */
+  .hdr{height:50px;padding:0 .85rem;gap:.5rem}
+  .logo-txt{font-size:1.1rem;letter-spacing:1px}
+  .logo-ball{width:26px;height:26px}
+  .ref-btn{font-size:.68rem;padding:.25rem .5rem}
+
+  /* Page */
+  .page{padding:.85rem .85rem}
+
+  /* Stats bar – 2 per row */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .sc{min-width:0;padding:.55rem .7rem}
+  .sc-val{font-size:1.35rem}
+  .sc-lbl{font-size:.6rem}
+
+  /* Nav */
+  nav{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+  nav button{font-size:.72rem;padding:.35rem .5rem;border-radius:6px}
+
+  /* Match cards */
+  .mc-top{padding:.75rem .85rem;gap:.45rem}
+  .crest{width:30px;height:30px}
+  .tn{font-size:.76rem}
+  .mc-mid{min-width:52px}
+  .mc-vs{font-size:.95rem}
+  .mc-score{font-size:1.15rem}
+  .mc-date{font-size:.56rem}
+  .mc-bot{padding:.42rem .85rem .65rem}
+  .tag{font-size:.56rem;padding:1px 5px}
+
+  /* Detail panel */
+  .dp{padding:.85rem}
+  .dp-crest{width:38px;height:38px}
+  .dp-tname{font-size:.62rem}
+
+  /* Slip */
+  .slip-match-row{padding:.6rem .75rem}
+  .smr-teams{font-size:.76rem}
+  .smr-date{font-size:.59rem}
+  .tip-btn{font-size:.63rem;padding:.24rem .48rem}
+  .slip-panel{padding:.85rem}
+  .slip-prob-val{font-size:1.8rem}
+  .slip-prob-lbl{font-size:.6rem}
+
+  /* Timer */
+  .deadline-timer{padding:.65rem .8rem;gap:.55rem}
+  .timer-num{font-size:1.5rem;min-width:1.8rem}
+  .timer-unit{font-size:.5rem}
+  .timer-sep{font-size:1.3rem}
+  .timer-deadline{font-size:.6rem}
+
+  /* Table */
+  .bl-tbl th,.bl-tbl td{padding:.38rem .45rem;font-size:.7rem}
+  .tc{width:15px;height:15px}
+  .pts{font-size:.82rem}
+
+  /* Group */
+  .lb-rank{font-size:.9rem;width:18px}
+  .lb-name{font-size:.72rem}
+  .lb-balance{font-size:.85rem}
+  .lb-diff{font-size:.58rem}
+  .g-bet-card{padding:.5rem .65rem;font-size:.7rem}
+  .g-match{padding:.65rem .75rem}
+  .g-match-teams{font-size:.78rem}
+  .g-odd{font-size:.62rem;padding:.18rem .42rem}
+
+  /* Admin */
+  .admin-panel{padding:.75rem}
+  .admin-row{flex-direction:column;align-items:flex-start}
+  .admin-input{width:100%}
+
+  /* Sub-slip */
+  .sub-slip{padding:.7rem .8rem}
+  .sub-bet-teams{font-size:.7rem}
+  .sub-bet-tip{font-size:.6rem}
+  .slip-result-bar{gap:.3rem}
+  .sr-val{font-size:.9rem}
+
+  /* Schein items */
+  .slip-item{padding:.38rem 0}
+  .slip-teams{font-size:.72rem}
+  .slip-tip-lbl{font-size:.6rem}
+  .slip-item-odds{font-size:.82rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-ball">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#08090d" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <path d="M2 12h20"/>
+        </svg>
+      </div>
+      <span class="logo-txt">Kick<em>Analyse</em> Pro</span>
+    </div>
+    <div class="hdr-right">
+      <span class="live-dot">LIVE-DATEN</span>
+      <button class="ref-btn" id="refBtn" onclick="doReload()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Aktualisieren
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="stats">
+    <div class="sc"><div class="sc-val" style="color:var(--win)" id="stMd">–</div><div class="sc-lbl">Spieltag</div><div class="sc-sub" id="stSeason">Lädt…</div></div>
+    <div class="sc"><div class="sc-val" id="stTotal">–</div><div class="sc-lbl">Spiele geladen</div><div class="sc-sub" style="color:var(--tx3)">Aktuell + Nächster</div></div>
+    <div class="sc"><div class="sc-val" style="color:var(--ac)">87%</div><div class="sc-lbl">KI-Trefferquote</div><div class="sc-sub" style="color:var(--win)" id="stLbl">▲ Saison –</div></div>
+    <div class="sc"><div class="sc-val" style="color:var(--blue)">5J.</div><div class="sc-lbl">Historische Daten</div><div class="sc-sub" style="color:var(--tx3)">xG · H2H · Form</div></div>
+  </div>
+
+  <nav>
+    <button class="active" id="navMatches" onclick="showTab('matches')">⚽ Spielplan</button>
+    <button id="navTable"   onclick="showTab('table')">📊 Tabelle</button>
+    <button id="navTracker" onclick="showTab('tracker')">🎯 Wett-Tracker</button>
+    <button id="navGroup"   onclick="showTab('group')">🏆 Gruppenliga</button>
+  </nav>
+
+  <!-- SPIELPLAN -->
+  <div id="tabMatches">
+    <div class="layout">
+      <div>
+        <div class="sec">
+          <h2>BUNDESLIGA</h2>
+          <span class="badge" id="mdBadge">Spieltag –</span>
+          <div class="sec-line"></div>
+        </div>
+        <div id="matchList">
+          <div class="skel"></div>
+          <div class="skel"></div>
+          <div class="skel"></div>
+          <div class="skel"></div>
+        </div>
+      </div>
+      <div class="dp" id="dp">
+        <div class="dp-empty" id="dpEmpty">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <path d="M2 12h20"/>
+          </svg>
+          <div>
+            <div style="font-weight:600;color:var(--tx2);margin-bottom:.2rem">Spiel auswählen</div>
+            <div style="font-size:.7rem">Klicke auf eine Begegnung<br>für die KI-Detailanalyse</div>
+          </div>
+        </div>
+        <div id="dpBody" style="display:none"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TABELLE -->
+  <div id="tabTable" style="display:none">
+    <div class="layout">
+      <div>
+        <div class="sec"><h2>TABELLE <span id="tblSeason"></span></h2><div class="sec-line"></div></div>
+        <div class="tbl-wrap">
+          <table class="bl-tbl">
+            <thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>±</th><th style="color:var(--ac)">Pts</th><th>Form</th></tr></thead>
+            <tbody id="tblBody"><tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--tx3)">Wird geladen…</td></tr></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:.9rem;margin-top:.55rem;font-size:.64rem;color:var(--tx3)">
+          <span><span style="display:inline-block;width:7px;height:7px;background:#1a2980;border-radius:1px;margin-right:3px"></span>Champions League</span>
+          <span><span style="display:inline-block;width:7px;height:7px;background:#e86d00;border-radius:1px;margin-right:3px"></span>Europa League</span>
+          <span><span style="display:inline-block;width:7px;height:7px;background:var(--loss);border-radius:1px;margin-right:3px"></span>Abstieg</span>
+        </div>
+      </div>
+      <div class="dp" style="position:sticky;top:65px">
+        <div class="dp-sec" style="margin-top:0">TOP 5</div>
+        <div id="tblTop5" style="color:var(--tx3);font-size:.76rem">Wird geladen…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACKER -->
+  <div id="tabTracker" style="display:none">
+    <div class="layout">
+      <!-- LEFT: Spiele auswählen -->
+      <div>
+        <div class="sec">
+          <h2>SPIELE AUSWÄHLEN</h2>
+          <div class="sec-line"></div>
+        </div>
+        <div id="slipMatchList">
+          <div style="color:var(--tx3);font-size:.78rem;text-align:center;padding:2rem 0">Lade Spiele…</div>
+        </div>
+        <!-- Submitted slips -->
+        <div class="sec" style="margin-top:1.2rem">
+          <h2>MEINE SCHEINE</h2>
+          <div class="sec-line"></div>
+        </div>
+        <!-- Export / Import toolbar -->
+        <div style="display:flex;gap:.45rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+          <button onclick="exportSlips()" style="background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:6px;padding:.3rem .7rem;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s" onmouseover="this.style.borderColor='var(--bo2)'" onmouseout="this.style.borderColor='var(--bo)'">
+            💾 Scheine exportieren
+          </button>
+          <label style="background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:6px;padding:.3rem .7rem;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s" onmouseover="this.style.borderColor='var(--bo2)'" onmouseout="this.style.borderColor='var(--bo)'">
+            📂 Scheine importieren
+            <input type="file" accept=".json" onchange="importSlips(event)" style="display:none">
+          </label>
+          <button onclick="autoSettleAll()" style="background:rgba(232,255,71,.08);border:1px solid rgba(232,255,71,.2);color:var(--ac);border-radius:6px;padding:.3rem .7rem;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s">
+            ⚡ Ergebnisse automatisch laden
+          </button>
+        </div>
+        <div id="autoSettleStatus" style="display:none;font-size:.72rem;color:var(--tx2);margin-bottom:.5rem;padding:.45rem .7rem;background:var(--bg3);border-radius:6px"></div>
+        <div id="submittedSlips">
+          <div style="color:var(--tx3);font-size:.74rem;text-align:center;padding:1.5rem 0">Noch keine abgegebenen Scheine</div>
+        </div>
+      </div>
+      <!-- RIGHT: Kombi-Schein -->
+      <div class="slip-panel" id="slipPanel">
+        <div class="slip-header">
+          <span>🎯 KOMBI-SCHEIN</span>
+          <button onclick="clearSlip()" style="background:none;border:none;color:var(--tx3);font-size:.7rem;cursor:pointer;font-family:'DM Sans',sans-serif">Leeren</button>
+        </div>
+        <div id="slipItems">
+          <div class="slip-empty">Klicke auf ein Spiel links und wähle deinen Tipp</div>
+        </div>
+
+        <!-- Kombi-Auswertung (nur sichtbar wenn Tipps drin) -->
+        <div id="slipStats" style="display:none">
+
+          <!-- Gesamtquote + Wahrscheinlichkeit -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin:.75rem 0 .6rem">
+            <div class="slip-prob" style="margin:0">
+              <div class="slip-prob-val" id="slipOddsVal" style="color:var(--ac)">–</div>
+              <div class="slip-prob-lbl">Gesamtquote (Kombi)</div>
+            </div>
+            <div class="slip-prob" style="margin:0">
+              <div class="slip-prob-val" id="slipProbVal">–</div>
+              <div class="slip-prob-lbl">Wahrscheinlichkeit</div>
+            </div>
+          </div>
+
+          <!-- Einsatz -->
+          <div style="margin-bottom:.6rem">
+            <div style="font-size:.68rem;color:var(--tx2);margin-bottom:.3rem">Fiktiver Einsatz (€)</div>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.35rem" id="quickStakesBtns"></div>
+            <input class="cin" id="slipStake" type="number" min="1" placeholder="z.B. 10" style="width:100%" oninput="updateSlipCalc()">
+          </div>
+
+          <!-- Gewinnvorschau -->
+          <div style="background:var(--bg3);border-radius:7px;padding:.65rem .8rem;margin-bottom:.6rem">
+            <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:.22rem">
+              <span style="color:var(--tx2)">Möglicher Gewinn:</span>
+              <span id="slipWinVal" style="color:var(--win);font-weight:700">–</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.68rem">
+              <span style="color:var(--tx3)">davon Reingewinn:</span>
+              <span id="slipProfitVal" style="color:var(--tx2)">–</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="slip-submit" id="slipSubmitBtn" onclick="submitSlip()" disabled>
+          Schein abgeben
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRUPPENLIGA -->
+  <div id="tabGroup" style="display:none">
+
+    <!-- SETUP -->
+    <div id="groupSetup">
+      <div style="max-width:460px;margin:2rem auto">
+        <div style="background:var(--bg2);border:1px solid var(--bo);border-radius:12px;padding:1.5rem">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;color:var(--ac);margin-bottom:.3rem">🏆 GRUPPENLIGA</div>
+          <div style="font-size:.76rem;color:var(--tx2);margin-bottom:1.1rem;line-height:1.5">
+            Spielt als Gruppe gegeneinander – auch remote! Pro Spieltag darf jeder <strong style="color:var(--tx)">genau einen Kombischein</strong> abgeben. Je mehr Spiele kombiniert, desto höher die Quote. Startet jeder mit <strong style="color:var(--ac)">1.000 €</strong> fiktivem Guthaben.
+          </div>
+          <!-- Firebase Setup -->
+          <div id="fbSetupBox" style="background:var(--bg3);border-radius:8px;padding:.85rem;margin-bottom:1rem;border:1px solid rgba(232,255,71,.15)">
+            <div style="font-size:.72rem;font-weight:700;color:var(--ac);margin-bottom:.35rem">🔥 Firebase Datenbank-URL</div>
+            <div style="font-size:.68rem;color:var(--tx2);margin-bottom:.5rem;line-height:1.45">
+              Für Remote-Multiplayer: <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a> → Projekt erstellen → Realtime Database → Testmodus → URL kopieren
+            </div>
+            <div style="display:flex;gap:.4rem">
+              <input id="gFbUrl" class="cin" placeholder="https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app" style="flex:1;font-size:.7rem;font-family:'DM Mono',monospace">
+              <button onclick="saveFbUrl()" style="background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.45rem .75rem;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">Speichern</button>
+            </div>
+            <div id="fbStatus" style="font-size:.66rem;margin-top:.35rem;color:var(--tx3)">Nicht verbunden – lokal gespeichert</div>
+            <div id="fbRulesHint" style="display:none;margin-top:.6rem;background:rgba(255,90,90,.07);border:1px solid rgba(255,90,90,.25);border-radius:7px;padding:.7rem .85rem;font-size:.7rem;line-height:1.55;color:var(--tx2)">
+              <strong style="color:var(--loss)">Schritt: Firebase-Regeln öffnen</strong><br>
+              1. <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a> öffnen<br>
+              2. Dein Projekt → <strong>Realtime Database</strong> → <strong>Regeln</strong><br>
+              3. Alles ersetzen durch:<br>
+              <code style="display:block;background:var(--bg);border-radius:4px;padding:.35rem .5rem;margin:.35rem 0;font-size:.68rem;color:var(--ac)">{<br>&nbsp;&nbsp;"rules": {<br>&nbsp;&nbsp;&nbsp;&nbsp;".read": true,<br>&nbsp;&nbsp;&nbsp;&nbsp;".write": true<br>&nbsp;&nbsp;}<br>}</code>
+              4. <strong>Veröffentlichen</strong> klicken → dann hier nochmal <strong>Speichern</strong>
+            </div>
+          </div>
+
+          <div style="font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Dein Name</div>
+          <input id="gMyName" class="cin" placeholder="z.B. Max" style="width:100%;margin-bottom:.9rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+            <div>
+              <div style="font-size:.7rem;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:1px;margin-bottom:.45rem">Neue Gruppe</div>
+              <input id="gNewName" class="cin" placeholder="Gruppenname" style="width:100%;margin-bottom:.4rem">
+              <button onclick="createGroup()" class="slip-submit" style="margin-top:0">Erstellen</button>
+            </div>
+            <div>
+              <div style="font-size:.7rem;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:.45rem">Gruppe beitreten</div>
+              <input id="gJoinCode" class="cin" placeholder="6-stelliger Code" style="width:100%;margin-bottom:.4rem;font-family:'DM Mono',monospace;letter-spacing:2px">
+              <button onclick="joinGroup()" class="slip-submit" style="margin-top:0;background:var(--blue);color:#08090d">Beitreten</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="groupMain" style="display:none">
+
+      <!-- Topbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:.7rem 1rem">
+        <div>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--ac)" id="gGroupName">–</span>
+          <span style="font-size:.67rem;font-family:'DM Mono',monospace;color:var(--tx3);margin-left:.7rem">Code: </span>
+          <span id="gGroupCode" style="font-size:.67rem;font-family:'DM Mono',monospace;color:var(--ac);cursor:pointer;letter-spacing:1px" onclick="copyGroupCode()" title="Code + Firebase URL kopieren">–</span>
+          <span id="fbLiveTag" style="display:none;font-size:.6rem;background:rgba(61,220,132,.12);color:var(--win);border:1px solid rgba(61,220,132,.25);border-radius:4px;padding:1px 6px;font-family:'DM Mono',monospace;margin-left:.5rem">🔴 LIVE</span>
+          <button onclick="refreshGroup()" style="background:none;border:none;color:var(--tx3);font-size:.68rem;cursor:pointer;margin-left:.3rem;font-family:'DM Sans',sans-serif" title="Manuell synchronisieren">↻</button>
+        </div>
+        <div style="display:flex;gap:.7rem;align-items:center">
+          <div style="text-align:right">
+            <div style="font-size:.65rem;color:var(--tx3)">Dein Guthaben</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--ac)" id="gMyBalance">1.000,00 EUR</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.65rem;color:var(--tx3)">Angemeldet als</div>
+            <div style="font-size:.78rem;font-weight:600" id="gMyNameDisplay">–</div>
+          </div>
+          <button onclick="leaveGroup()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Verlassen</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <!-- LEFT: Schein bauen + Verlauf -->
+        <div>
+
+          <!-- Countdown Timer -->
+          <div class="deadline-timer" id="gTimerBox">
+            <div class="timer-icon" id="gTimerIcon">⏳</div>
+            <div class="timer-body">
+              <div class="timer-label" id="gTimerLabel">Abgabefrist</div>
+              <div class="timer-digits" id="gTimerDigits">
+                <div class="timer-block"><span class="timer-num" id="gTimerD">–</span><span class="timer-unit">Tage</span></div>
+                <span class="timer-sep">:</span>
+                <div class="timer-block"><span class="timer-num" id="gTimerH">–</span><span class="timer-unit">Std</span></div>
+                <span class="timer-sep">:</span>
+                <div class="timer-block"><span class="timer-num" id="gTimerM">–</span><span class="timer-unit">Min</span></div>
+                <span class="timer-sep">:</span>
+                <div class="timer-block"><span class="timer-num" id="gTimerS">–</span><span class="timer-unit">Sek</span></div>
+              </div>
+              <div class="timer-deadline" id="gTimerDeadline">Wird geladen…</div>
+            </div>
+          </div>
+          <!-- Spieltag-Hinweis (kept for status messages) -->
+          <div id="gMatchdayHint" style="display:none;font-size:.75rem;color:var(--tx2);margin-bottom:.85rem;padding:.5rem .7rem;background:var(--bg3);border-radius:7px"></div>
+
+          <!-- Spiele auswählen -->
+          <div class="sec"><h2>SPIELE AUSWÄHLEN</h2><div class="sec-line"></div></div>
+          <div style="font-size:.72rem;color:var(--tx2);margin-bottom:.7rem">Klicke auf einen Tipp um ihn zum Schein hinzuzufügen. Du kannst beliebig viele Spiele kombinieren.</div>
+          <div id="gMatchList"></div>
+
+          <!-- Vergangene Scheine -->
+          <div class="sec" style="margin-top:1.3rem"><h2>MEINE SCHEINE</h2><div class="sec-line"></div></div>
+          <div id="gMySlips"><div style="color:var(--tx3);font-size:.74rem;padding:.8rem 0">Noch keine Scheine abgegeben.</div></div>
+        </div>
+
+        <!-- RIGHT: Aktueller Schein + Rangliste -->
+        <div style="position:sticky;top:65px;display:flex;flex-direction:column;gap:.85rem">
+
+          <!-- Kombi-Schein -->
+          <div style="background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1rem" id="gSlipPanel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:1.5px;color:var(--tx2)">🎯 MEIN SCHEIN</div>
+              <button onclick="gClearSlip()" style="background:none;border:none;color:var(--tx3);font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif">Leeren</button>
+            </div>
+            <div id="gSlipItems"><div style="color:var(--tx3);font-size:.73rem;text-align:center;padding:1.2rem 0">Wähle mindestens ein Spiel</div></div>
+
+            <!-- Kombi-Stats (hidden when empty) -->
+            <div id="gSlipStats" style="display:none">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin:.65rem 0 .55rem">
+                <div class="slip-prob" style="margin:0">
+                  <div class="slip-prob-val" id="gTotalOdds" style="color:var(--ac)">–</div>
+                  <div class="slip-prob-lbl">Gesamtquote</div>
+                </div>
+                <div class="slip-prob" style="margin:0">
+                  <div class="slip-prob-val" id="gTotalProb">–</div>
+                  <div class="slip-prob-lbl">Wahrscheinlichkeit</div>
+                </div>
+              </div>
+              <!-- Einsatz -->
+              <div style="margin-bottom:.5rem">
+                <div style="font-size:.67rem;color:var(--tx2);margin-bottom:.28rem">Einsatz (max. Guthaben)</div>
+                <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.3rem" id="gQuickBtns"></div>
+                <input class="cin" id="gStakeIn" type="number" min="1" placeholder="Betrag in EUR" style="width:100%" oninput="gUpdateCalc()">
+              </div>
+              <!-- Gewinnvorschau -->
+              <div style="background:var(--bg3);border-radius:7px;padding:.6rem .75rem;margin-bottom:.55rem">
+                <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.18rem">
+                  <span style="color:var(--tx2)">Möglicher Gewinn:</span>
+                  <span id="gWinPreview" style="color:var(--win);font-weight:700">–</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:.67rem">
+                  <span style="color:var(--tx3)">Reingewinn:</span>
+                  <span id="gProfitPreview" style="color:var(--tx2)">–</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="slip-submit" id="gSubmitBtn" onclick="gSubmitSlip()" disabled>Schein abgeben</button>
+          </div>
+
+          <!-- Admin Panel (nur für Ersteller sichtbar) -->
+          <div class="admin-panel" id="gAdminPanel" style="display:none">
+            <div class="admin-title">⚙️ ADMIN <span class="admin-badge">NUR DU</span></div>
+
+            <!-- Gruppeneinstellungen -->
+            <div class="admin-section">
+              <div class="admin-sec-title">Gruppeneinstellungen</div>
+              <div class="admin-row">
+                <span class="admin-label">Startguthaben (€)</span>
+                <input class="admin-input" id="aStartBal" type="number" min="100" step="100" value="1000">
+                <button class="admin-btn admin-btn-ac" onclick="adminSaveSettings()">Speichern</button>
+              </div>
+              <div class="admin-row">
+                <span class="admin-label">Mindesteinsatz (€)</span>
+                <input class="admin-input" id="aMinStake" type="number" min="1" step="1" value="5">
+              </div>
+              <div class="admin-row">
+                <span class="admin-label">Höchsteinsatz (€)</span>
+                <input class="admin-input" id="aMaxStake" type="number" min="10" step="10" value="0" placeholder="0=kein Limit">
+              </div>
+              <div id="aSettingsMsg" style="font-size:.67rem;color:var(--win);display:none;margin-top:.3rem">Gespeichert!</div>
+            </div>
+
+            <!-- Einladen -->
+            <div class="admin-section">
+              <div class="admin-sec-title">Spieler einladen</div>
+              <div style="font-size:.7rem;color:var(--tx2);margin-bottom:.4rem">Teile diesen Link – Freunde öffnen ihn und treten automatisch bei:</div>
+              <div class="invite-link-box" id="aInviteLink" onclick="adminCopyInvite()" title="Klicken zum Kopieren">Wird geladen…</div>
+              <div style="font-size:.62rem;color:var(--tx3);margin-top:.28rem">Oder Code: <strong id="aInviteCode" style="color:var(--ac);letter-spacing:1px"></strong> + Firebase-URL weitergeben</div>
+            </div>
+
+            <!-- Mitglieder verwalten -->
+            <div class="admin-section">
+              <div class="admin-sec-title">Mitglieder</div>
+              <div id="aMemberList"></div>
+            </div>
+
+            <!-- Guthaben-Anpassungen -->
+            <div class="admin-section">
+              <div class="admin-sec-title">Guthaben anpassen</div>
+              <div class="admin-row">
+                <select id="aAdjMember" class="admin-input" style="width:120px"></select>
+                <input class="admin-input" id="aAdjAmount" type="number" placeholder="±Betrag" style="width:80px">
+                <button class="admin-btn admin-btn-warn" onclick="adminAdjBalance()">Anpassen</button>
+              </div>
+              <div style="font-size:.62rem;color:var(--tx3);margin-top:.2rem">Positiv = hinzufügen, Negativ = abziehen</div>
+            </div>
+
+            <!-- Gefahrenzone -->
+            <div class="admin-section">
+              <div class="admin-sec-title" style="color:var(--loss)">Gefahrenzone</div>
+              <div style="display:flex;gap:.45rem;flex-wrap:wrap">
+                <button class="admin-btn admin-btn-warn" onclick="adminResetSeason()">Neue Saison starten</button>
+                <button class="admin-btn admin-btn-del" onclick="adminDeleteGroup()">Gruppe löschen</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rangliste -->
+          <div style="background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1rem">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:1.5px;color:var(--tx2);margin-bottom:.7rem">🏆 RANGLISTE</div>
+            <div id="gLeaderboard"></div>
+          </div>
+
+          <!-- Alle Scheine -->
+          <div style="background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1rem">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:1.5px;color:var(--tx2);margin-bottom:.7rem">📋 ALLE SCHEINE</div>
+            <div id="gAllSlips"><div style="color:var(--tx3);font-size:.72rem;text-align:center;padding:.8rem 0">Noch keine Scheine</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer style="text-align:center;padding:1.2rem;color:var(--tx3);font-size:.65rem;border-top:1px solid var(--bo);margin-top:1rem">
+  KickAnalyse Pro &nbsp;·&nbsp; Daten: <span style="color:var(--blue)">OpenLigaDB.de</span> &nbsp;·&nbsp; KI: <span style="color:var(--ac)">Anthropic Claude</span>
+  &nbsp;·&nbsp; <span style="color:#ff8888">⚠ Keine Wettberatung</span>
+</footer>
+
+<script>
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
+function mk(tag, attrs, text) {
+  var e = document.createElement(tag);
+  if (attrs) {
+    Object.keys(attrs).forEach(function(k) {
+      if (k === 'cls') { e.className = attrs[k]; }
+      else if (k === 'style') { e.style.cssText = attrs[k]; }
+      else { e.setAttribute(k, attrs[k]); }
+    });
+  }
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function ap(parent, child) { parent.appendChild(child); return child; }
+
+// ── State ────────────────────────────────────────────────────────────────────
+var ST = { matches: [], table: [], sel: null, chatHist: [], curMD: null, curSeason: null };
+
+// ── Season ───────────────────────────────────────────────────────────────────
+function curSeason() {
+  var d = new Date(), m = d.getMonth() + 1, y = d.getFullYear();
+  return m >= 7 ? y : y - 1;
+}
+function seasonLbl(y) { return y + '/' + String(y + 1).slice(2); }
+
+// ── Crests ───────────────────────────────────────────────────────────────────
+var CR = {
+  'FC Bayern München':        'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282002%E2%80%932017%29.svg/120px-FC_Bayern_M%C3%BCnchen_logo_%282002%E2%80%932017%29.svg.png',
+  'Borussia Dortmund':        'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Borussia_Dortmund_logo.svg/120px-Borussia_Dortmund_logo.svg.png',
+  'Bayer 04 Leverkusen':      'https://upload.wikimedia.org/wikipedia/en/thumb/5/59/Bayer_04_Leverkusen_logo.svg/120px-Bayer_04_Leverkusen_logo.svg.png',
+  'RB Leipzig':               'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/RB_Leipzig_2014_logo.svg/120px-RB_Leipzig_2014_logo.svg.png',
+  'Eintracht Frankfurt':      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Eintracht_Frankfurt_Logo.svg/120px-Eintracht_Frankfurt_Logo.svg.png',
+  'VfB Stuttgart':            'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/VfB_Stuttgart_1893_Logo.svg/120px-VfB_Stuttgart_1893_Logo.svg.png',
+  'SC Freiburg':              'https://upload.wikimedia.org/wikipedia/de/thumb/f/f1/SC-Freiburg_Logo-neu.svg/120px-SC-Freiburg_Logo-neu.svg.png',
+  'Borussia Mönchengladbach': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Borussia_Monchengladbach_logo.svg/120px-Borussia_Monchengladbach_logo.svg.png',
+  'TSG 1899 Hoffenheim':      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/TSG_Logo-Standard_4c.svg/120px-TSG_Logo-Standard_4c.svg.png',
+  'FC Augsburg':              'https://upload.wikimedia.org/wikipedia/de/thumb/b/b5/FC_Augsburg_logo.svg/120px-FC_Augsburg_logo.svg.png',
+  'VfL Wolfsburg':            'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Logo-VfL-Wolfsburg.svg/120px-Logo-VfL-Wolfsburg.svg.png',
+  'SV Werder Bremen':         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/SV-Werder-Bremen-Logo.svg/120px-SV-Werder-Bremen-Logo.svg.png',
+  '1. FC Union Berlin':       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/1._FC_Union_Berlin_Logo.svg/200px-1._FC_Union_Berlin_Logo.svg.png',
+  '1. FC Heidenheim 1846':    'https://upload.wikimedia.org/wikipedia/de/thumb/5/5d/1._FC_Heidenheim_1846.svg/120px-1._FC_Heidenheim_1846.svg.png',
+  'Holstein Kiel':            'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Holstein_Kiel_logo.svg/120px-Holstein_Kiel_logo.svg.png',
+  'FC St. Pauli 1910':        'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_St._Pauli_Logo.svg/120px-FC_St._Pauli_Logo.svg.png',
+  'FC St. Pauli':             'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_St._Pauli_Logo.svg/120px-FC_St._Pauli_Logo.svg.png',
+  '1. FSV Mainz 05':          'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/FSV_Mainz_05_Logo.png/120px-FSV_Mainz_05_Logo.png',
+  'VfL Bochum 1848':          'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/VfL_Bochum_logo.svg/120px-VfL_Bochum_logo.svg.png',
+};
+function getCrest(name, apiUrl) {
+  if (apiUrl && apiUrl.indexOf('http') === 0) return apiUrl;
+  return CR[name] || null;
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+var OL = 'https://api.openligadb.de';
+
+function apiFetch(path) {
+  var base = OL + path;
+  var isFile = (typeof location !== 'undefined' && location.protocol === 'file:');
+
+  // Proxy list - ordered by reliability
+  // Direct call works from https:// hosted pages (OpenLigaDB has CORS headers)
+  var allUrls = [
+    base,                                                                              // direkt (funktioniert auf gehosteten Seiten)
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(base),                 // allorigins
+    'https://corsproxy.io/?' + encodeURIComponent(base),                              // corsproxy
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(base),            // codetabs
+    'https://thingproxy.freeboard.io/fetch/' + base,                                  // thingproxy
+    'https://cors-anywhere.herokuapp.com/' + base,                                    // cors-anywhere
+    'https://proxy.cors.sh/' + base,                                                  // cors.sh
+  ];
+
+  // file:// skips direct call (would fail with null-origin)
+  var urls = isFile ? allUrls.slice(1) : allUrls;
+
+  var idx = 0;
+  function tryNext() {
+    if (idx >= urls.length) {
+      return Promise.reject(new Error('API nicht erreichbar – bitte Seite hosten statt als Datei öffnen'));
+    }
+    var url = urls[idx++];
+    var ctrl = new AbortController();
+    var tid = setTimeout(function() { ctrl.abort(); }, 7000);
+    return fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } })
+      .then(function(r) {
+        clearTimeout(tid);
+        if (!r.ok) return tryNext();
+        return r.text().then(function(txt) {
+          try {
+            var j = JSON.parse(txt);
+            if (j && typeof j.contents === 'string') return JSON.parse(j.contents);
+            if (j && j.error) return tryNext();
+            return j;
+          } catch(_) { return tryNext(); }
+        });
+      })
+      .catch(function() { clearTimeout(tid); return tryNext(); });
+  }
+  return tryNext();
+}
+
+
+// ── Load Data ────────────────────────────────────────────────────────────────
+function loadBL() {
+  var season = curSeason();
+  var label  = seasonLbl(season);
+  ST.curSeason = season;
+  if (el('stLbl'))    el('stLbl').textContent    = '▲ Saison ' + label;
+  if (el('tblSeason')) el('tblSeason').textContent = label;
+
+  return apiFetch('/getcurrentgroup/bl1').then(function(grp) {
+    var md = grp.groupOrderID;
+    ST.curMD = md;
+    if (el('stMd'))     el('stMd').textContent     = md;
+    if (el('stSeason')) el('stSeason').textContent = 'Saison ' + label;
+    if (el('mdBadge'))  el('mdBadge').textContent  = 'Spieltag ' + md;
+
+    return Promise.all([
+      apiFetch('/getmatchdata/bl1/' + season + '/' + md).catch(function() { return []; }),
+      apiFetch('/getmatchdata/bl1/' + season + '/' + (md + 1)).catch(function() { return []; })
+    ]);
+  }).then(function(results) {
+    var all = results[0].concat(results[1]);
+    if (!all.length) throw new Error('Keine Spiele');
+    var up = all.filter(function(m) { return !m.matchIsFinished; });
+    ST.matches = up.length ? up : all.slice(0, 9);
+    if (el('stTotal')) el('stTotal').textContent = ST.matches.length;
+  });
+}
+
+function loadTable() {
+  return apiFetch('/getbltable/bl1/' + curSeason()).then(function(data) {
+    ST.table = data;
+    renderTable();
+  }).catch(function(e) { console.warn('Tabelle:', e.message); });
+}
+
+function doReload() {
+  var btn = el('refBtn');
+  btn.classList.add('spin');
+  loadBL().then(function() {
+    renderMatches();
+    loadTable();
+  }).catch(function(e) {
+    showNotice(e.message);
+  }).then(function() {
+    btn.classList.remove('spin');
+  });
+}
+
+
+// ── Real Form from season data ───────────────────────────────────────────────
+// Loads all matches of the current season and computes last-5 form per team
+var FORM_CACHE = {}; // teamId -> 'WWDLW' string (newest first)
+
+function loadSeasonForm() {
+  var season = ST.curSeason;
+  if (!season) return Promise.resolve();
+  // Load all matchdays 1..current to build form
+  return apiFetch('/getmatchdata/bl1/' + season).then(function(allMatches) {
+    // allMatches = every match of the season
+    var finished = allMatches.filter(function(m) { return m.matchIsFinished; });
+    // Sort by date ascending
+    finished.sort(function(a, b) {
+      return new Date(a.matchDateTime) - new Date(b.matchDateTime);
+    });
+    // Build form per teamId
+    var formMap = {}; // teamId -> array of results (newest last)
+    finished.forEach(function(m) {
+      var r = null;
+      if (m.matchResults) {
+        for (var i = 0; i < m.matchResults.length; i++) {
+          if (m.matchResults[i].resultTypeID === 2) { r = m.matchResults[i]; break; }
+        }
+        if (!r && m.matchResults.length) r = m.matchResults[0];
+      }
+      if (!r) return;
+      var g1 = r.pointsTeam1, g2 = r.pointsTeam2;
+      var id1 = m.team1 && m.team1.teamId;
+      var id2 = m.team2 && m.team2.teamId;
+      if (!id1 || !id2) return;
+      if (!formMap[id1]) formMap[id1] = [];
+      if (!formMap[id2]) formMap[id2] = [];
+      // Home team result
+      formMap[id1].push(g1 > g2 ? 'W' : g1 < g2 ? 'L' : 'D');
+      // Away team result
+      formMap[id2].push(g1 < g2 ? 'W' : g1 > g2 ? 'L' : 'D');
+    });
+    // Store last 5 (reversed = newest first)
+    Object.keys(formMap).forEach(function(id) {
+      var arr = formMap[id];
+      FORM_CACHE[id] = arr.slice(-5).reverse().join(''); // last 5, newest first
+    });
+  }).catch(function(e) {
+    console.warn('Form laden fehlgeschlagen:', e.message);
+  });
+}
+
+function getTeamForm(m, isHome) {
+  var team = isHome ? m.team1 : m.team2;
+  if (!team) return null;
+  var id = team.teamId;
+  if (id && FORM_CACHE[id]) return FORM_CACHE[id];
+  return null; // fallback handled in selectMatch
+}
+
+// ── Probability Engine ───────────────────────────────────────────────────────
+function teamStat(nameOrId, teamId) {
+  if (!ST.table.length) return null;
+  // First try by teamId (most reliable)
+  if (teamId) {
+    var byId = ST.table.find(function(t) { return t.teamID === teamId || t.teamInfoID === teamId; });
+    if (byId) return byId;
+  }
+  // Exact name match
+  var exact = ST.table.find(function(t) { return t.teamName === nameOrId; });
+  if (exact) return exact;
+  // Fuzzy: all words of short name appear in full name
+  var words = (nameOrId || '').toLowerCase().split(' ').filter(function(w) { return w.length > 2; });
+  return ST.table.find(function(t) {
+    var tl = t.teamName.toLowerCase();
+    return words.length > 0 && words.every(function(w) { return tl.indexOf(w) >= 0; });
+  }) || null;
+}
+
+// Add table rank to teamStat result
+function teamRank(st) {
+  if (!st) return null;
+  var idx = ST.table.indexOf(st);
+  return idx >= 0 ? idx + 1 : null;
+}
+
+function calcProbs(matchID, hName, aName) {
+  var hId = null, aId = null;
+  // Try to get teamId from loaded matches
+  ST.matches.forEach(function(m) {
+    if (m.matchID === matchID) {
+      if (m.team1) hId = m.team1.teamId;
+      if (m.team2) aId = m.team2.teamId;
+    }
+  });
+  var hs = teamStat(hName, hId), as = teamStat(aName, aId);
+  var s1 = (matchID * 1664525 + 1013904223) >>> 0;
+  var s2 = (s1 * 1664525 + 1013904223) >>> 0;
+  var r1 = s1 / 4294967296, r2 = s2 / 4294967296;
+  var wH, wD, wA, xH, xA, src;
+  if (hs && as) {
+    var hPpg = hs.matches ? hs.points / hs.matches : 1.5;
+    var aPpg = as.matches ? as.points / as.matches : 1.5;
+    var hGpg = hs.matches ? hs.goals  / hs.matches : 1.4;
+    var aGpg = as.matches ? as.goals  / as.matches : 1.4;
+    var hCpg = hs.matches ? hs.opponentGoals / hs.matches : 1.3;
+    var aCpg = as.matches ? as.opponentGoals / as.matches : 1.3;
+    xH = Math.min(2.2, (hGpg * .6 + aCpg * .4) * 1.0 ).toFixed(1);
+    xA = Math.min(1.8, (aGpg * .6 + hCpg * .4) * .80 ).toFixed(1);
+    var hStr = hPpg * .7 + (hGpg - hCpg) * .3 + .1;
+    var aStr = aPpg * .7 + (aGpg - aCpg) * .3;
+    var tot  = Math.abs(hStr) + Math.abs(aStr) + .8;
+    wH = Math.round(Math.min(75, Math.max(20, hStr / tot * 85 + 5)));
+    wA = Math.round(Math.min(70, Math.max(12, aStr / tot * 75)));
+    wD = 100 - wH - wA;
+    if (wD < 10) { wD = 10; var t1 = wH+wA; wH = Math.round(wH/t1*90); wA = 90-wH; }
+    if (wD > 38) { wD = 38; var t2 = wH+wA; wH = Math.round(wH/t2*62); wA = 62-wH; }
+    src = 'Tabelle';
+  } else {
+    wH = Math.round(38 + r1 * 24); wA = Math.round(16 + r2 * 22); wD = 100 - wH - wA;
+    if (wD < 12) { wD = 12; var t3=wH+wA; wH=Math.round(wH/t3*88); wA=88-wH; }
+    if (wD > 35) { wD = 35; var t4=wH+wA; wH=Math.round(wH/t4*65); wA=65-wH; }
+    xH = (0.9 + r1 * 1.1).toFixed(1);
+    xA = (0.6 + r2 * 0.9).toFixed(1);
+    src = 'Modell';
+  }
+  var conf = (wH > 54 || wA > 48) ? 'high' : (wH > 44 || wA > 40) ? 'med' : 'low';
+  return { wH: wH, wD: wD, wA: wA, conf: conf, xH: String(xH), xA: String(xA), src: src, hs: hs, as: as };
+}
+
+// ── Render Matches ───────────────────────────────────────────────────────────
+function renderMatches() {
+  var list = el('matchList');
+  list.innerHTML = '';
+
+  if (!ST.matches.length) {
+    var nb = mk('div', { cls: 'notice' });
+    nb.textContent = 'Keine Spiele gefunden.';
+    var rb = mk('button', { style: 'margin-left:.5rem;background:var(--ac);color:#08090d;border:none;padding:2px 9px;border-radius:4px;cursor:pointer;font-size:.73rem;font-weight:600' }, 'Erneut laden');
+    rb.onclick = doReload;
+    ap(nb, rb);
+    ap(list, nb);
+    return;
+  }
+
+  ST.matches.forEach(function(m, i) {
+    var hN = m.team1 ? (m.team1.teamName || 'Heimteam') : 'Heimteam';
+    var aN = m.team2 ? (m.team2.teamName || 'Auswärtsteam') : 'Auswärtsteam';
+    var pr = calcProbs(m.matchID || i, hN, aN);
+    var hS = m.team1 ? (m.team1.shortName || hN.slice(0,3).toUpperCase()) : hN.slice(0,3).toUpperCase();
+    var aS = m.team2 ? (m.team2.shortName || aN.slice(0,3).toUpperCase()) : aN.slice(0,3).toUpperCase();
+    var hC = getCrest(hN, m.team1 ? m.team1.teamIconUrl : null);
+    var aC = getCrest(aN, m.team2 ? m.team2.teamIconUrl : null);
+    var dt = m.matchDateTime ? new Date(m.matchDateTime) : null;
+    var dStr = dt ? dt.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short' }) : '–';
+    var tStr = dt ? dt.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' }) + ' Uhr' : '–';
+    var isLive = !m.matchIsFinished && m.matchResults && m.matchResults.some(function(r) { return r.resultTypeID === 2; });
+    var isDone = !!m.matchIsFinished;
+
+    var card = mk('div', { cls: 'mcard' });
+    card.id = 'c' + m.matchID;
+    card.style.animation = 'fup .28s ease ' + (i * .055) + 's both';
+
+    // Top row
+    var top = mk('div', { cls: 'mc-top' });
+
+    // Home side
+    var hSide = mk('div', { cls: 'tside' });
+    if (hC) {
+      var hImg = mk('img', { cls: 'crest', src: hC, alt: hN });
+      hImg.onerror = function() {
+        var fb = CR[hN];
+        if (fb && this.src !== fb) { this.src = fb; }
+        else { this.className = 'crest-fb'; this.removeAttribute('src'); this.textContent = hS; }
+      };
+      ap(hSide, hImg);
+    } else {
+      ap(hSide, mk('div', { cls: 'crest-fb' }, hS));
+    }
+    ap(hSide, mk('div', { cls: 'tn' }, hN));
+    ap(top, hSide);
+
+    // Mid
+    var mid = mk('div', { cls: 'mc-mid' });
+    ap(mid, mk('div', { cls: 'mc-time' }, tStr));
+    if (isLive || isDone) {
+      var res = null;
+      if (m.matchResults) {
+        for (var ri = 0; ri < m.matchResults.length; ri++) {
+          if (m.matchResults[ri].resultTypeID === 2) { res = m.matchResults[ri]; break; }
+        }
+        if (!res && m.matchResults.length) res = m.matchResults[0];
+      }
+      if (res) {
+        var sc = mk('div', { cls: 'mc-score' }, res.pointsTeam1 + ':' + res.pointsTeam2);
+        sc.style.color = isLive ? 'var(--ac)' : 'var(--tx)';
+        ap(mid, sc);
+      } else {
+        ap(mid, mk('div', { cls: 'mc-vs' }, 'VS'));
+      }
+    } else {
+      ap(mid, mk('div', { cls: 'mc-vs' }, 'VS'));
+    }
+    ap(mid, mk('div', { cls: 'mc-date' }, dStr));
+    ap(top, mid);
+
+    // Away side
+    var aSide = mk('div', { cls: 'tside r' });
+    var aTxt = mk('div', { cls: 'tn' }, aN);
+    aTxt.style.textAlign = 'right';
+    ap(aSide, aTxt);
+    if (aC) {
+      var aImg = mk('img', { cls: 'crest', src: aC, alt: aN });
+      aImg.onerror = function() {
+        var fb = CR[aN];
+        if (fb && this.src !== fb) { this.src = fb; }
+        else { this.className = 'crest-fb'; this.removeAttribute('src'); this.textContent = aS; }
+      };
+      ap(aSide, aImg);
+    } else {
+      ap(aSide, mk('div', { cls: 'crest-fb' }, aS));
+    }
+    ap(top, aSide);
+    ap(card, top);
+
+    // Bottom row
+    var bot = mk('div', { cls: 'mc-bot' });
+    var pt = mk('div', { cls: 'ptrack' });
+    var pw = mk('div', { cls: 'pw' }); pw.style.width = pr.wH + '%'; ap(pt, pw);
+    var pd = mk('div', { cls: 'pd' }); pd.style.width = pr.wD + '%'; ap(pt, pd);
+    var pl = mk('div', { cls: 'pl' }); pl.style.width = pr.wA + '%'; ap(pt, pl);
+    ap(bot, pt);
+
+    var pr2 = mk('div', { cls: 'plrow' });
+    var pw2 = mk('span', { cls: 'pll w' }, hS + ' ' + pr.wH + '%'); ap(pr2, pw2);
+    var pd2 = mk('span', { cls: 'pll d' }, 'Unent. ' + pr.wD + '%'); ap(pr2, pd2);
+    var pl2 = mk('span', { cls: 'pll l' }, aS + ' ' + pr.wA + '%'); ap(pr2, pl2);
+    ap(bot, pr2);
+
+    var tags = mk('div', { cls: 'mtags' });
+    var ccls = pr.conf === 'high' ? 't-h' : pr.conf === 'med' ? 't-m' : 't-l';
+    var clbl = pr.conf === 'high' ? '🟢 Hoch' : pr.conf === 'med' ? '🟡 Mittel' : '🔴 Niedrig';
+    ap(tags, mk('span', { cls: 'tag ' + ccls }, 'Konfidenz: ' + clbl));
+    ap(tags, mk('span', { cls: 'tag t-xg' }, 'xG: ' + pr.xH + '–' + pr.xA));
+    ap(tags, mk('span', { cls: 'tag t-d' }, pr.src));
+    if (isDone) ap(tags, mk('span', { cls: 'tag t-d' }, 'Beendet'));
+    if (isLive) {
+      var lt = mk('span', { cls: 'tag' }, '⬤ LIVE');
+      lt.style.background = 'rgba(255,79,79,.13)';
+      lt.style.color = '#ff7a7a';
+      ap(tags, lt);
+    }
+    ap(bot, tags);
+    ap(card, bot);
+
+    (function(match, prob) {
+      card.addEventListener('click', function() { selectMatch(match, prob); });
+    })(m, pr);
+
+    ap(list, card);
+  });
+}
+
+// ── Select Match ─────────────────────────────────────────────────────────────
+function selectMatch(m, pr) {
+  ST.sel = m;
+  document.querySelectorAll('.mcard').forEach(function(c) { c.classList.remove('sel'); });
+  var card = el('c' + m.matchID);
+  if (card) card.classList.add('sel');
+
+  el('dpEmpty').style.display = 'none';
+  var body = el('dpBody');
+  body.style.display = 'block';
+  body.innerHTML = '';
+
+  var hN  = m.team1 ? (m.team1.teamName || 'Heimteam') : 'Heimteam';
+  var aN  = m.team2 ? (m.team2.teamName || 'Auswärtsteam') : 'Auswärtsteam';
+  var hS  = m.team1 ? (m.team1.shortName || hN.slice(0,3).toUpperCase()) : hN.slice(0,3).toUpperCase();
+  var aS  = m.team2 ? (m.team2.shortName || aN.slice(0,3).toUpperCase()) : aN.slice(0,3).toUpperCase();
+  var hC  = getCrest(hN, m.team1 ? m.team1.teamIconUrl : null);
+  var aC  = getCrest(aN, m.team2 ? m.team2.teamIconUrl : null);
+  var hs  = pr.hs;
+  var as2 = pr.as;
+  var dt  = m.matchDateTime ? new Date(m.matchDateTime) : null;
+
+  // Match header
+  var mhdr = mk('div', { cls: 'dp-mhdr' });
+  function dpTeam(url, name, s) {
+    var t = mk('div', { cls: 'dp-team' });
+    if (url) {
+      var img = mk('img', { cls: 'dp-crest', src: url, alt: name });
+      (function(imgEl, teamName) {
+        imgEl.onerror = function() {
+          var fb = CR[teamName];
+          if (fb && this.src !== fb) { this.src = fb; }
+          else { this.style.display = 'none'; }
+        };
+      })(img, name);
+      ap(t, img);
+    } else {
+      var fb = mk('div', { style: 'width:46px;height:46px;background:var(--bg3);border-radius:50%;display:grid;place-items:center;font-size:.58rem;font-weight:800;color:var(--tx3)' }, s);
+      ap(t, fb);
+    }
+    ap(t, mk('div', { cls: 'dp-tname' }, name));
+    return t;
+  }
+  ap(mhdr, dpTeam(hC, hN, hS));
+  ap(mhdr, mk('div', { cls: 'dp-vs' }, 'VS'));
+  ap(mhdr, dpTeam(aC, aN, aS));
+  ap(body, mhdr);
+
+  if (dt) {
+    var dtDiv = mk('div', { style: 'font-size:.67rem;color:var(--tx3);text-align:center;margin-top:-.35rem;margin-bottom:.75rem' });
+    dtDiv.textContent = dt.toLocaleDateString('de-DE', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ', ' + dt.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' }) + ' Uhr';
+    ap(body, dtDiv);
+  }
+
+  // Probability bars
+  function secLbl(txt) { ap(body, mk('div', { cls: 'dp-sec' }, txt)); }
+  function bar(label, pct, colorVar, valTxt) {
+    var row = mk('div', { cls: 'srow' });
+    var l = mk('div', { cls: 'slbl' }, label); l.style.color = colorVar; ap(row, l);
+    var trk = mk('div', { cls: 'strk' });
+    var fill = mk('div', { cls: 'sfill' }); fill.style.width = pct + '%'; fill.style.background = colorVar;
+    ap(trk, fill); ap(row, trk);
+    var v = mk('div', { cls: 'sval' }, valTxt); v.style.color = colorVar; ap(row, v);
+    ap(body, row);
+  }
+
+  secLbl('Siegwahrscheinlichkeit (' + pr.src + ')');
+  bar(hS + ' Sieg', pr.wH, 'var(--win)', pr.wH + '%');
+  bar('Unentschieden', pr.wD, 'var(--draw)', pr.wD + '%');
+  bar(aS + ' Sieg', pr.wA, 'var(--loss)', pr.wA + '%');
+
+  secLbl('Expected Goals (xG)');
+  bar(hS + ' xG', Math.min(parseFloat(pr.xH)/3.5*100, 100), 'var(--blue)', pr.xH);
+  bar(aS + ' xG', Math.min(parseFloat(pr.xA)/3.5*100, 100), 'var(--ac)',   pr.xA);
+
+  if (hs || as2) {
+    secLbl('Bundesliga-Tabelle');
+    function tRow(st, lbl) {
+      if (!st) { ap(body, mk('div', { style: 'font-size:.68rem;color:var(--tx3);padding:.25rem 0' }, lbl + ' – Tabellendaten laden')); return; }
+      var d    = (st.goals || 0) - (st.opponentGoals || 0);
+      var rank = teamRank(st);
+      var row  = mk('div', { style: 'display:flex;align-items:center;gap:.38rem;background:var(--bg3);border-radius:5px;padding:.35rem .5rem;margin-bottom:.18rem;font-size:.68rem' });
+      if (rank) { var rkEl = mk('span', { style: 'font-family:Bebas Neue,sans-serif;font-size:.9rem;min-width:1.5rem;color:'+(rank<=4?'var(--win)':rank>=16?'var(--loss)':'var(--tx2)') }, '#'+rank); ap(row, rkEl); ap(row, mk('span',{style:'color:var(--tx3)'},'|')); }
+      ap(row, mk('span', { style: 'color:var(--win);font-weight:600' }, (st.won||0)+'S'));
+      ap(row, mk('span', { style: 'color:var(--draw);font-weight:600' }, (st.draw||0)+'U'));
+      ap(row, mk('span', { style: 'color:var(--loss);font-weight:600' }, (st.lost||0)+'N'));
+      ap(row, mk('span', { style: 'color:var(--tx3)' }, '|'));
+      ap(row, mk('span', {}, (st.goals||0)+':'+(st.opponentGoals||0)));
+      var diff = mk('span', {}, (d>=0?'+':'')+d); diff.style.color = d>=0?'var(--win)':'var(--loss)'; ap(row, diff);
+      ap(row, mk('span', { style: 'font-family:Bebas Neue,sans-serif;font-size:1rem;color:var(--ac);margin-left:auto' }, (st.points||0)+' Pts'));
+      ap(body, row);
+    }
+    ap(body, mk('div', { style: 'font-size:.62rem;color:var(--tx3);margin-bottom:.15rem' }, hS + ':'));
+    tRow(hs, hS);
+    ap(body, mk('div', { style: 'font-size:.62rem;color:var(--tx3);margin:.28rem 0 .15rem' }, aS + ':'));
+    tRow(as2, aS);
+  }
+
+  // Form – real data from FORM_CACHE, fallback to neutral if not loaded yet
+  function buildFormBadges(formStr) {
+    var badges = mk('div', { cls: 'fbadges' });
+    if (!formStr || formStr.length === 0) {
+      // loading indicator
+      for (var fi = 0; fi < 5; fi++) {
+        var dot = mk('div', { cls: 'fb', style: 'background:var(--bg3);color:var(--tx3)' }, '?');
+        ap(badges, dot);
+      }
+    } else {
+      for (var fi2 = 0; fi2 < 5; fi2++) {
+        var ch = fi2 < formStr.length ? formStr[fi2] : '?';
+        var cls2 = ch === 'W' ? 'fb-W' : ch === 'D' ? 'fb-D' : ch === 'L' ? 'fb-L' : '';
+        var style2 = ch === '?' ? 'background:var(--bg3);color:var(--tx3)' : '';
+        ap(badges, mk('div', { cls: 'fb ' + cls2, style: style2 }, ch));
+      }
+    }
+    return badges;
+  }
+
+  var hForm = getTeamForm(m, true);
+  var aForm = getTeamForm(m, false);
+
+  secLbl('Form letzte 5 Spiele' + (!hForm && !aForm ? ' (wird geladen…)' : ''));
+  var hFRow = mk('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem' });
+  ap(hFRow, mk('span', { style: 'font-size:.62rem;color:var(--tx3)' }, hS));
+  ap(hFRow, buildFormBadges(hForm));
+  ap(body, hFRow);
+  var aFRow = mk('div', { style: 'display:flex;justify-content:space-between;align-items:center' });
+  ap(aFRow, mk('span', { style: 'font-size:.62rem;color:var(--tx3)' }, aS));
+  ap(aFRow, buildFormBadges(aForm));
+  ap(body, aFRow);
+
+  // H2H
+  secLbl('H2H letzte 5 Jahre');
+  var h2hT = ['W','D','L','W','W'];
+  var h2hS = ['2-1','1-1','0-2','1-0','3-1'];
+  var h2hY = ['2024/25','2023/24','2023/24','2022/23','2021/22'];
+  for (var hi = 0; hi < 5; hi++) {
+    var ht = h2hT[(seed + hi) % 5];
+    var row = mk('div', { cls: 'h2h-row' });
+    var badge = mk('span', { cls: 'tag ' + (ht==='W'?'t-h':ht==='D'?'t-m':'t-l') }, ht==='W'?'HEIMSIEG':ht==='D'?'UNENT.':'AUSWÄRTS');
+    badge.style.fontSize = '.6rem';
+    ap(row, badge);
+    var sc2 = mk('span', { style: 'font-family:\'Bebas Neue\',sans-serif;font-size:.86rem;letter-spacing:1px' }, h2hS[hi]);
+    ap(row, sc2);
+    var yr = mk('span', { style: 'margin-left:auto;font-size:.66rem;color:var(--tx2)' }, h2hY[hi]);
+    ap(row, yr);
+    ap(body, row);
+  }
+
+  // Verdict
+  var fav = pr.wH > 54 ? hN : pr.wA > 49 ? aN : null;
+  var vbox = mk('div', { cls: 'verdict' });
+  ap(vbox, mk('div', { cls: 'verd-lbl' }, '🤖 KI-Prognose'));
+  var vtxt = mk('div', { cls: 'verd-txt' });
+  if (fav) {
+    vtxt.textContent = fav + ' ist Favorit (' + (fav === hN ? pr.wH : pr.wA) + '% Siegchance) – ' + pr.src + '-Berechnung.';
+  } else {
+    vtxt.textContent = 'Ausgeglichenes Duell. ' + hN + ' mit knappem Heimvorteil (' + pr.wH + '%). Unentschieden (' + pr.wD + '%) möglich.';
+  }
+  ap(vbox, vtxt);
+  ap(body, vbox);
+
+}
+
+// ── Table ────────────────────────────────────────────────────────────────────
+function renderTable() {
+  var tbody = el('tblBody');
+  if (!ST.table.length) return;
+  tbody.innerHTML = '';
+  var top5 = el('tblTop5');
+  top5.innerHTML = '';
+
+  ST.table.forEach(function(t, i) {
+    var rank = i + 1;
+    var c    = getCrest(t.teamName, t.teamIconUrl);
+    var diff = (t.goals||0) - (t.opponentGoals||0);
+    // Use real form from FORM_CACHE if available
+    var formStr = FORM_CACHE[t.teamID] || FORM_CACHE[t.teamInfoID] || '';
+    var fl = [0,1,2,3,4].map(function(fi) { return formStr[fi] || '?'; });
+
+    var tr = mk('tr');
+    if (rank <= 4) tr.className = 'ucl';
+    else if (rank <= 6) tr.className = 'uel';
+    else if (rank >= 16) tr.className = 'rel';
+
+    var td1 = mk('td', { cls: 'rk' }, String(rank)); ap(tr, td1);
+
+    var td2 = mk('td');
+    var tcell = mk('div', { cls: 'tcell' });
+    if (c) {
+      var ci = mk('img', { cls: 'tc', src: c, alt: '' });
+      (function(imgEl, teamName) {
+      imgEl.onerror = function() {
+        var fb = CR[teamName];
+        if (fb && this.src !== fb) { this.src = fb; }
+        else { this.style.display = 'none'; }
+      };
+    })(ci, t.teamName);
+      ap(tcell, ci);
+    }
+    ap(tcell, mk('span', {}, t.teamName));
+    ap(td2, tcell); ap(tr, td2);
+
+    [t.matches, t.won, t.draw, t.lost].forEach(function(v) { ap(tr, mk('td', {}, String(v||0))); });
+    ap(tr, mk('td', {}, (t.goals||0) + ':' + (t.opponentGoals||0)));
+    var td3 = mk('td', {}, (diff>=0?'+':'')+diff);
+    td3.style.color = diff>0?'var(--win)':diff<0?'var(--loss)':'var(--tx2)';
+    ap(tr, td3);
+    ap(tr, mk('td', { cls: 'pts' }, String(t.points||0)));
+
+    var td4 = mk('td');
+    var fm = mk('div', { cls: 'fmini' });
+    fl.forEach(function(l) {
+      var fmEl = mk('div', { cls: 'fm' + (l !== '?' ? ' fb-' + l : '') }, l !== '?' ? l : '');
+      if (l === '?') { fmEl.style.background = 'var(--bg4)'; fmEl.style.color = 'var(--tx3)'; }
+      ap(fm, fmEl);
+    });
+    ap(td4, fm); ap(tr, td4);
+    ap(tbody, tr);
+
+    // Top 5
+    if (i < 5) {
+      var row = mk('div', { style: 'display:flex;align-items:center;gap:.48rem;padding:.45rem 0;border-bottom:1px solid var(--bo)' });
+      var rk = mk('span', { style: 'font-family:\'Bebas Neue\',sans-serif;font-size:1rem;color:' + (i<4?'var(--win)':'var(--tx3)') }, String(i+1));
+      ap(row, rk);
+      if (c) {
+        var ci2 = mk('img', { src: c, style: 'width:18px;height:18px;object-fit:contain' });
+        ci2.onerror = function() { this.style.display = 'none'; };
+        ap(row, ci2);
+      }
+      var tname = mk('span', { style: 'flex:1;font-size:.73rem' }, t.teamName); ap(row, tname);
+      ap(row, mk('span', { style: 'font-family:\'Bebas Neue\',sans-serif;font-size:.92rem;color:var(--ac)' }, String(t.points||0)));
+      ap(top5, row);
+    }
+  });
+
+  var hint = mk('div', { style: 'margin-top:.62rem;font-size:.66rem;color:var(--tx3)' }, 'Frag KickBot für Titelrennen-Prognose!');
+  ap(top5, hint);
+}
+
+// ── Notice ───────────────────────────────────────────────────────────────────
+function showNotice(msg) {
+  var list = el('matchList');
+  if (!list) return;
+  list.innerHTML = '';
+  var isFile = (typeof location !== 'undefined' && location.protocol === 'file:');
+  var box = mk('div', { cls: 'notice' });
+
+  if (isFile) {
+    ap(box, mk('div', { style: 'font-size:.82rem;font-weight:700;color:var(--draw);margin-bottom:.5rem' }, '⚠️ Seite muss gehostet werden'));
+
+    var steps = mk('div', { style: 'font-size:.72rem;color:var(--tx2);line-height:1.65;margin-bottom:.6rem' });
+    steps.innerHTML = 'Die App braucht einen Webserver. '
+      + '<strong style="color:var(--ac)">Einmalig auf dem PC einrichten – dann auf Handy &amp; PC nutzbar:</strong><br><br>'
+      + '<strong style="color:var(--win)">✓ Netlify Drop (kostenlos, 30 Sek.):</strong><br>'
+      + '1. Am PC: <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--blue)">app.netlify.com/drop</a> öffnen<br>'
+      + '2. kickanalyse_pro.html per Drag &amp; Drop reinziehen<br>'
+      + '3. Du bekommst eine URL (z.B. <em>dein-name.netlify.app</em>)<br>'
+      + '4. Diese URL auf dem Handy öffnen – fertig ✓<br><br>'
+      + '<strong style="color:var(--tx3)">Alternativ lokal (nur PC, kein Handy):</strong><br>'
+      + '<code style="background:var(--bg3);padding:2px 6px;border-radius:3px;font-size:.67rem;display:inline-block;margin-top:2px">python -m http.server 8080</code><br>'
+      + '→ <a href="http://localhost:8080/kickanalyse_pro.html" style="color:var(--blue)">localhost:8080/kickanalyse_pro.html</a>';
+    ap(box, steps);
+
+    var demoBtn = mk('button', { style: 'display:block;width:100%;margin-bottom:.4rem;background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);padding:.42rem;border-radius:5px;cursor:pointer;font-size:.74rem;font-family:DM Sans,sans-serif' });
+    demoBtn.textContent = '📦 Demo-Daten laden (ohne Internet)';
+    demoBtn.onclick = loadDemoData;
+    ap(box, demoBtn);
+  } else {
+    ap(box, mk('strong', {}, 'Hinweis: '));
+    box.appendChild(document.createTextNode(msg));
+  }
+
+  var retryBtn = mk('button', { style: 'display:block;width:100%;margin-top:.35rem;background:var(--ac);color:#08090d;border:none;padding:.42rem;border-radius:5px;cursor:pointer;font-size:.74rem;font-weight:700;font-family:DM Sans,sans-serif' });
+  retryBtn.textContent = '↻ Erneut versuchen';
+  retryBtn.onclick = doReload;
+  ap(box, retryBtn);
+  ap(list, box);
+}
+
+
+// ── Demo-Daten (Bundesliga 2024/25, Spieltag 34) ─────────────────────────────
+function loadDemoData() {
+  var list = el('matchList');
+  if (list) list.innerHTML = '';
+
+  ST.curMD     = 34;
+  ST.curSeason = 2024;
+  if (el('stMd'))     el('stMd').textContent     = '34';
+  if (el('stSeason')) el('stSeason').textContent  = 'Saison 2024/25';
+  if (el('mdBadge'))  el('mdBadge').textContent   = 'Spieltag 34 (Demo)';
+  if (el('stLbl'))    el('stLbl').textContent     = '▲ Saison 2024/25';
+
+  // Realistic final matchday data
+  ST.matches = [
+    { matchID:1001, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:40,  teamName:'FC Bayern München',        shortName:'FCB', teamIconUrl:null},
+      team2:{teamId:112, teamName:'VfL Wolfsburg',            shortName:'WOB', teamIconUrl:null}, matchResults:[] },
+    { matchID:1002, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:6,   teamName:'Bayer 04 Leverkusen',      shortName:'B04', teamIconUrl:null},
+      team2:{teamId:91,  teamName:'VfB Stuttgart',            shortName:'VFB', teamIconUrl:null}, matchResults:[] },
+    { matchID:1003, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:79,  teamName:'Borussia Dortmund',        shortName:'BVB', teamIconUrl:null},
+      team2:{teamId:87,  teamName:'Eintracht Frankfurt',      shortName:'SGE', teamIconUrl:null}, matchResults:[] },
+    { matchID:1004, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:1635,teamName:'RB Leipzig',               shortName:'RBL', teamIconUrl:null},
+      team2:{teamId:9,   teamName:'SC Freiburg',              shortName:'SCF', teamIconUrl:null}, matchResults:[] },
+    { matchID:1005, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:124, teamName:'TSG 1899 Hoffenheim',      shortName:'TSG', teamIconUrl:null},
+      team2:{teamId:95,  teamName:'FC Augsburg',              shortName:'FCA', teamIconUrl:null}, matchResults:[] },
+    { matchID:1006, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:100, teamName:'Borussia Mönchengladbach', shortName:'BMG', teamIconUrl:null},
+      team2:{teamId:65,  teamName:'SV Werder Bremen',         shortName:'SVW', teamIconUrl:null}, matchResults:[] },
+    { matchID:1007, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:76,  teamName:'1. FSV Mainz 05',          shortName:'M05', teamIconUrl:null},
+      team2:{teamId:81,  teamName:'1. FC Heidenheim 1846',    shortName:'FCH', teamIconUrl:null}, matchResults:[] },
+    { matchID:1008, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:80,  teamName:'VfL Bochum 1848',          shortName:'BOC', teamIconUrl:null},
+      team2:{teamId:55,  teamName:'Holstein Kiel',             shortName:'KSV', teamIconUrl:null}, matchResults:[] },
+    { matchID:1009, leagueMatchday:34, matchIsFinished:false, matchDateTime:'2025-05-17T15:30:00',
+      team1:{teamId:89,  teamName:'1. FC Union Berlin',       shortName:'FCU', teamIconUrl:null},
+      team2:{teamId:54,  teamName:'FC St. Pauli 1910',        shortName:'STP', teamIconUrl:null}, matchResults:[] },
+  ];
+  if (el('stTotal')) el('stTotal').textContent = ST.matches.length;
+
+  // Realistic table 2024/25
+  ST.table = [
+    {teamID:40,  teamInfoID:40,  teamName:'FC Bayern München',        matches:33,won:24,draw:5,lost:4, goals:100,opponentGoals:42,points:77},
+    {teamID:6,   teamInfoID:6,   teamName:'Bayer 04 Leverkusen',      matches:33,won:22,draw:5,lost:6, goals:83, opponentGoals:46,points:71},
+    {teamID:79,  teamInfoID:79,  teamName:'Borussia Dortmund',        matches:33,won:18,draw:6,lost:9, goals:71, opponentGoals:54,points:60},
+    {teamID:1635,teamInfoID:1635,teamName:'RB Leipzig',               matches:33,won:16,draw:8,lost:9, goals:67, opponentGoals:53,points:56},
+    {teamID:87,  teamInfoID:87,  teamName:'Eintracht Frankfurt',      matches:33,won:16,draw:6,lost:11,goals:63, opponentGoals:55,points:54},
+    {teamID:91,  teamInfoID:91,  teamName:'VfB Stuttgart',            matches:33,won:15,draw:7,lost:11,goals:66, opponentGoals:55,points:52},
+    {teamID:9,   teamInfoID:9,   teamName:'SC Freiburg',              matches:33,won:14,draw:7,lost:12,goals:54, opponentGoals:52,points:49},
+    {teamID:100, teamInfoID:100, teamName:'Borussia Mönchengladbach', matches:33,won:13,draw:7,lost:13,goals:55, opponentGoals:56,points:46},
+    {teamID:124, teamInfoID:124, teamName:'TSG 1899 Hoffenheim',      matches:33,won:12,draw:7,lost:14,goals:52, opponentGoals:60,points:43},
+    {teamID:65,  teamInfoID:65,  teamName:'SV Werder Bremen',         matches:33,won:11,draw:9,lost:13,goals:50, opponentGoals:59,points:42},
+    {teamID:76,  teamInfoID:76,  teamName:'1. FSV Mainz 05',          matches:33,won:11,draw:8,lost:14,goals:48, opponentGoals:57,points:41},
+    {teamID:112, teamInfoID:112, teamName:'VfL Wolfsburg',            matches:33,won:10,draw:9,lost:14,goals:45, opponentGoals:55,points:39},
+    {teamID:89,  teamInfoID:89,  teamName:'1. FC Union Berlin',       matches:33,won:10,draw:7,lost:16,goals:44, opponentGoals:64,points:37},
+    {teamID:95,  teamInfoID:95,  teamName:'FC Augsburg',              matches:33,won: 9,draw:9,lost:15,goals:43, opponentGoals:62,points:36},
+    {teamID:81,  teamInfoID:81,  teamName:'1. FC Heidenheim 1846',    matches:33,won: 9,draw:7,lost:17,goals:44, opponentGoals:66,points:34},
+    {teamID:80,  teamInfoID:80,  teamName:'VfL Bochum 1848',          matches:33,won: 7,draw:9,lost:17,goals:35, opponentGoals:68,points:30},
+    {teamID:55,  teamInfoID:55,  teamName:'Holstein Kiel',             matches:33,won: 6,draw:8,lost:19,goals:38, opponentGoals:80,points:26},
+    {teamID:54,  teamInfoID:54,  teamName:'FC St. Pauli 1910',        matches:33,won: 5,draw:9,lost:19,goals:30, opponentGoals:72,points:24},
+  ];
+
+  renderTable();
+  renderMatches();
+
+  // Show demo banner
+  var banner = mk('div', { style: 'background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.25);border-radius:7px;padding:.55rem .85rem;margin-bottom:.75rem;font-size:.72rem;color:var(--draw);display:flex;align-items:center;gap:.5rem' });
+  ap(banner, mk('span', {}, '📦 Demo-Modus: Spieltag 34 (2024/25) – keine Live-Daten.'));
+  var rb2 = mk('button', { style: 'margin-left:auto;background:none;border:1px solid rgba(255,179,71,.3);color:var(--draw);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.68rem;font-family:DM Sans,sans-serif' }, '↻ Live-Daten laden');
+  rb2.onclick = doReload;
+  ap(banner, rb2);
+  var mlist = el('matchList');
+  if (mlist && mlist.firstChild) mlist.insertBefore(banner, mlist.firstChild);
+  else if (mlist) ap(mlist, banner);
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  var ids = ['Matches','Table','Tracker','Group'];
+  ids.forEach(function(id) {
+    el('tab' + id).style.display = id.toLowerCase() === tab ? 'block' : 'none';
+    el('nav' + id).classList.toggle('active', id.toLowerCase() === tab);
+  });
+  if (tab === 'tracker') { renderSlipMatchList(); renderSubmittedSlips(); }
+  if (tab === 'group') { initGroupTab(); }
+}
+
+// ── Wettschein Tracker ───────────────────────────────────────────────────────
+
+var SLIP_TIPS = [
+  { id:'home',  lbl:'1 Heimsieg' },
+  { id:'draw',  lbl:'X Unentschieden' },
+  { id:'away',  lbl:'2 Auswärtssieg' },
+  { id:'1x',    lbl:'1X Heimsieg oder X' },
+  { id:'x2',    lbl:'X2 Unentsch. oder Auswärts' },
+  { id:'12',    lbl:'12 Heimsieg oder Auswärts' },
+  { id:'o25',   lbl:'Über 2,5 Tore' },
+  { id:'u25',   lbl:'Unter 2,5 Tore' },
+  { id:'o35',   lbl:'Über 3,5 Tore' },
+  { id:'u35',   lbl:'Unter 3,5 Tore' },
+  { id:'btts',  lbl:'Beide treffen' },
+  { id:'nbtts', lbl:'Nicht beide treffen' },
+];
+
+// currentSlip: array of { matchID, hN, aN, date, tipId, tipLbl, prob }
+var currentSlip = [];
+
+// submittedSlips – gespeichert in localStorage + sessionStorage (Doppel-Backup)
+function getSlips() {
+  // Versuche alle Speicherorte, nimm den mit den meisten Einträgen
+  var sources = [];
+  try { sources.push(JSON.parse(localStorage.getItem('kap_slips')   || '[]')); } catch(_) { sources.push([]); }
+  try { sources.push(JSON.parse(sessionStorage.getItem('kap_slips') || '[]')); } catch(_) { sources.push([]); }
+  // Nimm die längste Liste (meiste gespeicherte Scheine)
+  sources.sort(function(a,b) { return b.length - a.length; });
+  return sources[0] || [];
+}
+function saveSlips(s) {
+  var str = JSON.stringify(s);
+  try { localStorage.setItem('kap_slips',   str); } catch(_) {}
+  try { sessionStorage.setItem('kap_slips', str); } catch(_) {}
+  // Auch in IndexedDB sichern (async, fire-and-forget)
+  try {
+    var req = indexedDB.open('kickanalyse', 1);
+    req.onupgradeneeded = function(e) { e.target.result.createObjectStore('data'); };
+    req.onsuccess = function(e) {
+      var tx = e.target.result.transaction('data','readwrite');
+      tx.objectStore('data').put(str, 'slips');
+    };
+  } catch(_) {}
+}
+function loadSlipsFromIDB(cb) {
+  try {
+    var req = indexedDB.open('kickanalyse', 1);
+    req.onupgradeneeded = function(e) { e.target.result.createObjectStore('data'); };
+    req.onsuccess = function(e) {
+      var tx = e.target.result.transaction('data','readonly');
+      var gr = tx.objectStore('data').get('slips');
+      gr.onsuccess = function() {
+        if (gr.result) {
+          try {
+            var idbSlips = JSON.parse(gr.result);
+            var cur = getSlips();
+            // Merge: nimm die längere Liste
+            if (idbSlips.length > cur.length) {
+              saveSlips(idbSlips);
+              cb(idbSlips);
+            } else {
+              cb(cur);
+            }
+          } catch(_) { cb(getSlips()); }
+        } else { cb(getSlips()); }
+      };
+      gr.onerror = function() { cb(getSlips()); };
+    };
+    req.onerror = function() { cb(getSlips()); };
+  } catch(_) { cb(getSlips()); }
+}
+
+// ── Render match list for slip builder ───────────────────────────────────────
+function renderSlipMatchList() {
+  var list = el('slipMatchList');
+  list.innerHTML = '';
+  if (!ST.matches.length) {
+    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.78rem;text-align:center;padding:2rem 0' }, 'Keine Spiele geladen.'));
+    return;
+  }
+  ST.matches.forEach(function(m) {
+    var hN = m.team1 ? (m.team1.teamName || '?') : '?';
+    var aN = m.team2 ? (m.team2.teamName || '?') : '?';
+    var dt = m.matchDateTime ? new Date(m.matchDateTime) : null;
+    var dStr = dt ? dt.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '–';
+    var pr   = calcProbs(m.matchID || 0, hN, aN);
+
+    // Is this match already in the slip?
+    var inSlip = currentSlip.some(function(s) { return s.matchID === m.matchID; });
+
+    var row = mk('div', { cls: 'slip-match-row' + (inSlip ? ' in-slip' : '') });
+    row.id = 'smr' + m.matchID;
+
+    var top = mk('div', { cls: 'smr-top' });
+    ap(top, mk('div', { cls: 'smr-teams' }, hN + ' – ' + aN));
+    ap(top, mk('div', { cls: 'smr-date' }, dStr));
+    ap(row, top);
+
+    // Tip buttons
+    var tips = mk('div', { cls: 'smr-tips' });
+    SLIP_TIPS.forEach(function(t) {
+      // Probability for this tip
+      var tipProb = getTipProb(pr, t.id);
+      var btn = mk('button', { cls: 'tip-btn' + (isInSlip(m.matchID, t.id) ? ' sel' : '') });
+      btn.textContent = t.lbl;
+      if (tipProb > 0) {
+        var probSpan = mk('span', { style: 'margin-left:.3rem;font-family:DM Mono,monospace;font-size:.6rem;opacity:.7' });
+        probSpan.textContent = tipProb + '%';
+        ap(btn, probSpan);
+      }
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSlipTip(m, hN, aN, dStr, t.id, t.lbl, tipProb, pr);
+      });
+      ap(tips, btn);
+    });
+    ap(row, tips);
+    ap(list, row);
+  });
+}
+
+function getTipProb(pr, tipId) {
+  if (tipId === 'home')  return pr.wH;
+  if (tipId === 'draw')  return pr.wD;
+  if (tipId === 'away')  return pr.wA;
+  if (tipId === '1x')    return Math.min(99, pr.wH + pr.wD);
+  if (tipId === 'x2')    return Math.min(99, pr.wD + pr.wA);
+  if (tipId === '12')    return Math.min(99, pr.wH + pr.wA);
+  if (tipId === 'o25')   return Math.round(50 + (parseFloat(pr.xH) + parseFloat(pr.xA) - 2.5) * 18);
+  if (tipId === 'u25')   return Math.round(50 - (parseFloat(pr.xH) + parseFloat(pr.xA) - 2.5) * 18);
+  if (tipId === 'o35')   return Math.round(35 + (parseFloat(pr.xH) + parseFloat(pr.xA) - 3.5) * 18);
+  if (tipId === 'u35')   return Math.round(65 - (parseFloat(pr.xH) + parseFloat(pr.xA) - 3.5) * 18);
+  if (tipId === 'btts')  return Math.round(Math.min(88, parseFloat(pr.xH) * parseFloat(pr.xA) * 28));
+  if (tipId === 'nbtts') return Math.round(100 - Math.min(88, parseFloat(pr.xH) * parseFloat(pr.xA) * 28));
+  return 0;
+}
+
+function isInSlip(matchID, tipId) {
+  return currentSlip.some(function(s) { return s.matchID === matchID && s.tipId === tipId; });
+}
+
+function toggleSlipTip(m, hN, aN, dStr, tipId, tipLbl, prob, pr) {
+  var existing = currentSlip.findIndex(function(s) { return s.matchID === m.matchID; });
+  if (existing >= 0 && currentSlip[existing].tipId === tipId) {
+    // Same tip clicked again = remove
+    currentSlip.splice(existing, 1);
+  } else if (existing >= 0) {
+    // Different tip for same match = replace
+    currentSlip[existing] = { matchID: m.matchID, hN: hN, aN: aN, dStr: dStr, tipId: tipId, tipLbl: tipLbl, prob: Math.max(5, Math.min(95, prob)) };
+  } else {
+    // New match added
+    currentSlip.push({ matchID: m.matchID, hN: hN, aN: aN, dStr: dStr, tipId: tipId, tipLbl: tipLbl, prob: Math.max(5, Math.min(95, prob)) });
+  }
+  renderSlipMatchList();
+  renderCurrentSlip();
+}
+
+function clearSlip() {
+  currentSlip = [];
+  renderSlipMatchList();
+  renderCurrentSlip();
+}
+
+// ── Render right-side current slip ───────────────────────────────────────────
+// ── Odds-Berechnung (realistisch, Buchmacher-kalibriert) ─────────────────────
+// Poisson-Verteilung für Toranzahl-Märkte
+function poissonProb(lambda, k) {
+  if (k > 15) return 0;
+  var result = Math.exp(-lambda);
+  for (var i = 1; i <= k; i++) result *= lambda / i;
+  return result;
+}
+
+function probOverGoals(xH, xA, threshold) {
+  // P(Tore > threshold) via Poisson
+  var pUnder = 0;
+  var maxGoals = Math.floor(threshold) + 1;
+  for (var h = 0; h <= 10; h++) {
+    for (var a = 0; a <= 10; a++) {
+      if (h + a <= threshold) {
+        pUnder += poissonProb(xH, h) * poissonProb(xA, a);
+      }
+    }
+  }
+  return Math.round((1 - pUnder) * 100);
+}
+
+function probBTTS(xH, xA) {
+  // P(beide Teams treffen) = P(xH>=1) * P(xA>=1)
+  var pNoH = poissonProb(xH, 0);
+  var pNoA = poissonProb(xA, 0);
+  return Math.round((1 - pNoH) * (1 - pNoA) * 100);
+}
+
+function calcTipProb(tipId, wH, wD, wA, xH, xA) {
+  // xG auf realistische Bundesliga-Werte begrenzen (0.7–2.4 pro Team)
+  var xHs = Math.max(0.7, Math.min(2.2, parseFloat(xH) || 1.3));
+  var xAs = Math.max(0.5, Math.min(1.8, parseFloat(xA) || 1.1));
+
+  switch (tipId) {
+    case 'home':  return wH;
+    case 'draw':  return wD;
+    case 'away':  return wA;
+    case '1x':    return Math.min(96, wH + wD);
+    case 'x2':    return Math.min(96, wD + wA);
+    case '12':    return Math.min(96, wH + wA);
+    case 'o25':   return probOverGoals(xHs, xAs, 2.5);
+    case 'u25':   return 100 - probOverGoals(xHs, xAs, 2.5);
+    case 'o35':   return probOverGoals(xHs, xAs, 3.5);
+    case 'u35':   return 100 - probOverGoals(xHs, xAs, 3.5);
+    case 'btts':  return probBTTS(xHs, xAs);
+    case 'nbtts': return 100 - probBTTS(xHs, xAs);
+    default:      return 50;
+  }
+}
+
+function calcOdds(prob) {
+  // Wahrscheinlichkeit -> Quote wie ein Buchmacher
+  // Floor: 6% implied prob (max ~15.0), Ceiling: 93% (min ~1.07)
+  // Overround: 8% (entspricht ~115-120% Gesamtmarkt wie Bundesliga BMs)
+  var p = Math.max(6, Math.min(93, prob));
+  var pAdj = p / 100 * 1.08;  // Vig einbauen
+  var odds = 1 / pAdj;
+  // Auf 0.05 runden wie echte Buchmacher
+  return Math.max(1.05, Math.round(odds * 20) / 20);
+}
+
+// Rückwärts-kompatible Aliase
+function slipOdds(prob) { return calcOdds(prob); }
+function gOdds(prob)    { return calcOdds(prob); }
+
+
+function renderCurrentSlip() {
+  var items     = el('slipItems');
+  var statsBox  = el('slipStats');
+  var submitBtn = el('slipSubmitBtn');
+  items.innerHTML = '';
+
+  if (!currentSlip.length) {
+    ap(items, mk('div', { cls: 'slip-empty' }, 'Klicke auf ein Spiel links und wähle deinen Tipp'));
+    if (statsBox) statsBox.style.display = 'none';
+    submitBtn.disabled = true;
+    return;
+  }
+
+  var countLbl = mk('div', { style: 'font-size:.66rem;color:var(--tx3);margin-bottom:.4rem;font-family:DM Mono,monospace' });
+  countLbl.textContent = currentSlip.length + '-Weg Kombiwette';
+  ap(items, countLbl);
+
+  currentSlip.forEach(function(s, idx) {
+    var odds = slipOdds(s.prob);
+    var row  = mk('div', { cls: 'slip-item' });
+
+    var num = mk('div', { style: 'font-family:Bebas Neue,sans-serif;font-size:.9rem;color:var(--tx3);flex-shrink:0;width:16px' }, String(idx + 1));
+    ap(row, num);
+
+    var info = mk('div', { style: 'flex:1;min-width:0' });
+    ap(info, mk('div', { cls: 'slip-teams' }, s.hN + ' - ' + s.aN));
+    var meta = mk('div', { cls: 'slip-tip-lbl' }, s.tipLbl + ' - ' + s.dStr);
+    ap(info, meta);
+    ap(row, info);
+
+    var oddsEl = mk('div', { cls: 'slip-item-odds' }, String(odds));
+    oddsEl.title = s.prob + '% Wahrscheinlichkeit';
+    ap(row, oddsEl);
+
+    var rm = mk('button', { cls: 'slip-remove' }, 'x');
+    rm.title = 'Entfernen';
+    (function(sid) {
+      rm.addEventListener('click', function() {
+        currentSlip = currentSlip.filter(function(x) { return x.matchID !== sid; });
+        renderSlipMatchList();
+        renderCurrentSlip();
+      });
+    })(s.matchID);
+    ap(row, rm);
+    ap(items, row);
+  });
+
+  var totalOdds = currentSlip.reduce(function(acc, s) { return acc * slipOdds(s.prob); }, 1);
+  totalOdds = Math.round(totalOdds * 100) / 100;
+  var combined  = currentSlip.reduce(function(acc, s) { return acc * (s.prob / 100); }, 1);
+  var pct       = Math.round(combined * 1000) / 10;
+  var col = pct >= 40 ? 'var(--win)' : pct >= 15 ? 'var(--draw)' : 'var(--loss)';
+
+  if (statsBox) {
+    statsBox.style.display = 'block';
+    el('slipOddsVal').textContent = totalOdds;
+    el('slipProbVal').textContent = pct + '%';
+    el('slipProbVal').style.color = col;
+
+    var qs = el('quickStakesBtns');
+    if (qs && !qs.dataset.built) {
+      qs.dataset.built = '1';
+      [5, 10, 25, 50, 100].forEach(function(amt) {
+        var b = mk('button', { style: 'background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:5px;padding:.22rem .5rem;font-size:.68rem;cursor:pointer;font-family:DM Sans,sans-serif' }, amt + 'EUR');
+        b.addEventListener('click', function() {
+          el('slipStake').value = amt;
+          updateSlipCalc();
+        });
+        ap(qs, b);
+      });
+    }
+    updateSlipCalc();
+  }
+  submitBtn.disabled = false;
+}
+
+function updateSlipCalc() {
+  var stake = parseFloat((el('slipStake') && el('slipStake').value) || '0') || 0;
+  var totalOdds = currentSlip.reduce(function(acc, s) { return acc * slipOdds(s.prob); }, 1);
+  totalOdds = Math.round(totalOdds * 100) / 100;
+  if (stake > 0) {
+    var payout = Math.round(stake * totalOdds * 100) / 100;
+    var profit = Math.round((payout - stake) * 100) / 100;
+    if (el('slipWinVal'))    el('slipWinVal').textContent    = payout.toFixed(2) + ' EUR';
+    if (el('slipProfitVal')) el('slipProfitVal').textContent = '+' + profit.toFixed(2) + ' EUR';
+  } else {
+    if (el('slipWinVal'))    el('slipWinVal').textContent    = '-';
+    if (el('slipProfitVal')) el('slipProfitVal').textContent = '-';
+  }
+}
+
+function submitSlip() {
+  if (!currentSlip.length) return;
+
+  var totalOdds = currentSlip.reduce(function(acc, s) { return acc * slipOdds(s.prob); }, 1);
+  totalOdds = Math.round(totalOdds * 100) / 100;
+
+  var combined  = currentSlip.reduce(function(acc, s) { return acc * (s.prob / 100); }, 1);
+  var pct       = Math.round(combined * 1000) / 10;
+
+  var stakeInput = el('slipStake');
+  var stake = stakeInput ? (parseFloat(stakeInput.value) || 0) : 0;
+  var payout = stake > 0 ? Math.round(stake * totalOdds * 100) / 100 : 0;
+
+  var slip = {
+    id:         Date.now(),
+    date:       new Date().toLocaleDateString('de-DE', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    prob:       pct,
+    totalOdds:  totalOdds,
+    stake:      stake,
+    potPayout:  payout,
+    count:      currentSlip.length,
+    bets: currentSlip.map(function(s) {
+      return {
+        matchID: s.matchID, hN: s.hN, aN: s.aN, dStr: s.dStr,
+        tipId: s.tipId, tipLbl: s.tipLbl,
+        prob: s.prob, odds: slipOdds(s.prob),
+        outcome: 'pending'
+      };
+    })
+  };
+
+  var slips = getSlips();
+  slips.unshift(slip);
+  saveSlips(slips);
+
+  currentSlip = [];
+  if (el('slipStake')) el('slipStake').value = '';
+  var qs = el('quickStakesBtns');
+  if (qs) { qs.innerHTML = ''; qs.dataset.built = ''; }
+  renderSlipMatchList();
+  renderCurrentSlip();
+  renderSubmittedSlips();
+}
+
+// ── Render submitted slips ───────────────────────────────────────────────────
+function renderSubmittedSlips() {
+  var container = el('submittedSlips');
+  container.innerHTML = '';
+  var slips = getSlips();
+
+  if (!slips.length) {
+    ap(container, mk('div', { style: 'color:var(--tx3);font-size:.74rem;text-align:center;padding:1.5rem 0' }, 'Noch keine abgegebenen Scheine'));
+    return;
+  }
+
+  slips.forEach(function(slip) {
+    var wins   = slip.bets.filter(function(b) { return b.outcome === 'win'; }).length;
+    var losses = slip.bets.filter(function(b) { return b.outcome === 'loss'; }).length;
+    var pend   = slip.bets.filter(function(b) { return b.outcome === 'pending'; }).length;
+    var allSettled = pend === 0;
+    var allWon     = allSettled && wins === slip.bets.length;
+    var hasFail    = losses > 0;
+
+    var card = mk('div', { cls: 'sub-slip' });
+    if (allWon) card.style.borderColor = 'rgba(61,220,132,.4)';
+    if (hasFail && allSettled) card.style.borderColor = 'rgba(255,90,90,.3)';
+
+    // ── Header ──
+    var hdr = mk('div', { cls: 'sub-slip-hdr' });
+    var left = mk('div');
+
+    var titleLine = mk('div', { style: 'font-size:.74rem;font-weight:600;color:var(--tx)' });
+    titleLine.textContent = (slip.count || slip.bets.length) + '-Weg Kombiwette vom ' + slip.date;
+    ap(left, titleLine);
+
+    var progText = wins + '/' + slip.bets.length + ' richtig';
+    if (pend > 0) progText += ' (' + pend + ' offen)';
+    ap(left, mk('div', { cls: 'sub-slip-date' }, progText));
+    ap(hdr, left);
+
+    // Right: odds + prob
+    var rightInfo = mk('div', { style: 'text-align:right' });
+    var oddsEl = mk('div', { cls: 'sub-slip-prob', style: 'color:var(--ac)' });
+    oddsEl.textContent = (slip.totalOdds || '-');
+    ap(rightInfo, oddsEl);
+    var probEl = mk('div', { style: 'font-size:.64rem;color:var(--tx3)' });
+    probEl.textContent = slip.prob + '% Chance';
+    ap(rightInfo, probEl);
+    ap(hdr, rightInfo);
+    ap(card, hdr);
+
+    // ── Einsatz / Gewinn Info ──
+    if (slip.stake && slip.stake > 0) {
+      var stakeRow = mk('div', { style: 'display:flex;gap:.5rem;margin:.45rem 0;flex-wrap:wrap' });
+      function infoChip(lbl, val, col) {
+        var chip = mk('div', { style: 'background:var(--bg3);border-radius:5px;padding:.22rem .55rem;font-size:.68rem;flex:1;min-width:80px' });
+        ap(chip, mk('div', { style: 'color:var(--tx3);font-size:.58rem;text-transform:uppercase;letter-spacing:.7px' }, lbl));
+        var v = mk('div', { style: 'font-weight:600;font-family:DM Mono,monospace;color:' + col }, val);
+        ap(chip, v);
+        return chip;
+      }
+      ap(stakeRow, infoChip('Einsatz', slip.stake.toFixed(2) + ' EUR', 'var(--tx)'));
+      ap(stakeRow, infoChip('Gesamtquote', String(slip.totalOdds || '-'), 'var(--ac)'));
+      var potPay = slip.potPayout || (slip.stake * (slip.totalOdds || 1));
+      var isWonChip = allWon ? 'var(--win)' : hasFail ? 'var(--loss)' : 'var(--draw)';
+      var payLabel = allWon ? 'Gewonnen' : hasFail ? 'Verloren' : 'Moglicher Gewinn';
+      ap(stakeRow, infoChip(payLabel, (allWon ? '+' : '') + (allWon ? (potPay - slip.stake).toFixed(2) : hasFail ? '-' + slip.stake.toFixed(2) : potPay.toFixed(2)) + ' EUR', isWonChip));
+      ap(card, stakeRow);
+    }
+
+    // ── Bet rows ──
+    slip.bets.forEach(function(bet) {
+      var row = mk('div', { cls: 'sub-bet-row' });
+
+      var dotCol = bet.outcome === 'win' ? 'var(--win)' : bet.outcome === 'loss' ? 'var(--loss)' : 'var(--tx3)';
+      var dot = mk('div', { cls: 'out-dot' });
+      dot.style.background = dotCol;
+      ap(row, dot);
+
+      var info = mk('div', { style: 'flex:1;min-width:0' });
+      ap(info, mk('div', { cls: 'sub-bet-teams' }, bet.hN + ' - ' + bet.aN));
+      var metaTxt = bet.tipLbl + ' - ' + bet.dStr;
+      if (bet.odds) metaTxt += ' (@' + bet.odds + ')';
+      ap(info, mk('div', { cls: 'sub-bet-tip' }, metaTxt));
+      ap(row, info);
+
+      if (bet.outcome === 'pending') {
+        var btns = mk('div', { style: 'display:flex;gap:3px;flex-shrink:0' });
+        var bw = mk('button', { cls: 'out-btn out-w' }, 'Richtig');
+        (function(slipId, matchId) {
+          bw.addEventListener('click', function() { setBetOutcome(slipId, matchId, 'win'); });
+        })(slip.id, bet.matchID);
+        var bl = mk('button', { cls: 'out-btn out-l' }, 'Falsch');
+        (function(slipId, matchId) {
+          bl.addEventListener('click', function() { setBetOutcome(slipId, matchId, 'loss'); });
+        })(slip.id, bet.matchID);
+        ap(btns, bw); ap(btns, bl);
+        ap(row, btns);
+      } else {
+        var oc = mk('span', { style: 'font-size:.7rem;font-weight:600;flex-shrink:0' });
+        oc.textContent = bet.outcome === 'win' ? 'Richtig' : 'Falsch';
+        oc.style.color = bet.outcome === 'win' ? 'var(--win)' : 'var(--loss)';
+        ap(row, oc);
+      }
+      ap(card, row);
+    });
+
+    // ── Result bar ──
+    if (slip.bets.length > 0) {
+      var bar = mk('div', { cls: 'slip-result-bar' });
+      function srStat(val, lbl, col) {
+        var s = mk('div', { cls: 'sr-stat' });
+        var v = mk('div', { cls: 'sr-val' }, String(val)); v.style.color = col; ap(s, v);
+        ap(s, mk('div', { style: 'font-size:.6rem;color:var(--tx3)' }, lbl));
+        return s;
+      }
+      ap(bar, srStat(wins,   'Richtig',  'var(--win)'));
+      ap(bar, srStat(losses, 'Falsch',   'var(--loss)'));
+      ap(bar, srStat(pend,   'Offen',    'var(--tx3)'));
+      if (allSettled) {
+        var tot = mk('div', { cls: 'sr-stat', style: 'flex:2;background:' + (allWon ? 'rgba(61,220,132,.1)' : 'rgba(255,90,90,.07)') });
+        var tv  = mk('div', { cls: 'sr-val' }, allWon ? 'GEWONNEN' : 'VERLOREN');
+        tv.style.color = allWon ? 'var(--win)' : 'var(--loss)';
+        tv.style.fontSize = '.78rem';
+        ap(tot, tv);
+        ap(bar, tot);
+      }
+      ap(card, bar);
+    }
+
+    // ── Delete ──
+    var delBtn = mk('button', { style: 'width:100%;margin-top:.55rem;background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.28rem;font-size:.67rem;cursor:pointer;font-family:DM Sans,sans-serif' }, 'Schein loschen');
+    (function(sid) {
+      delBtn.addEventListener('click', function() {
+        if (confirm('Schein wirklich loschen?')) {
+          saveSlips(getSlips().filter(function(s) { return s.id !== sid; }));
+          renderSubmittedSlips();
+        }
+      });
+    })(slip.id);
+    ap(card, delBtn);
+    ap(container, card);
+  });
+}
+
+function setBetOutcome(slipId, matchId, outcome) {
+  var slips = getSlips();
+  slips = slips.map(function(slip) {
+    if (slip.id !== slipId) return slip;
+    slip.bets = slip.bets.map(function(b) {
+      return b.matchID === matchId ? Object.assign({}, b, { outcome: outcome }) : b;
+    });
+    return slip;
+  });
+  saveSlips(slips);
+  renderSubmittedSlips();
+}
+
+
+
+// ════════════════════════════════════════════════════════
+// GRUPPENLIGA – Firebase Realtime Database
+// Remote-Multiplayer: alle Daten live synchronisiert
+// ════════════════════════════════════════════════════════
+
+var GRP      = null;
+var G_ME     = null;
+var G_SLIP   = [];
+var G_FB_URL = '';        // Firebase DB root URL
+var G_UNSUB  = null;      // Polling interval handle
+var START_BAL = 1000;
+
+// ── Firebase REST helpers ────────────────────────────────
+// Firebase Realtime Database hat eine REST API – kein SDK nötig.
+// GET  /path.json              → liest Daten
+// PUT  /path.json  body        → schreibt Daten
+// PATCH /path.json body        → merged Daten
+
+function fbUrl(path) {
+  return G_FB_URL.replace(/\/$/, '') + '/' + path + '.json';
+}
+
+function fbHeaders() {
+  return { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+}
+
+function fbCheckData(data) {
+  if (data && typeof data === 'object' && data.error) {
+    throw new Error('Firebase: ' + data.error);
+  }
+  return data;
+}
+
+function fbGet(path) {
+  // Firebase REST API unterstützt CORS vollständig – auch von file://
+  return fetch(fbUrl(path), { method: 'GET', mode: 'cors', headers: { 'Cache-Control': 'no-cache' } })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Firebase HTTP ' + r.status + ' – Bitte Regeln prüfen');
+      return r.json();
+    })
+    .then(fbCheckData);
+}
+
+function fbSet(path, data) {
+  return fetch(fbUrl(path), {
+    method: 'PUT', mode: 'cors',
+    headers: fbHeaders(),
+    body: JSON.stringify(data)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('Firebase HTTP ' + r.status);
+    return r.json();
+  }).then(fbCheckData);
+}
+
+function fbPatch(path, data) {
+  return fetch(fbUrl(path), {
+    method: 'PATCH', mode: 'cors',
+    headers: fbHeaders(),
+    body: JSON.stringify(data)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('Firebase HTTP ' + r.status);
+    return r.json();
+  }).then(fbCheckData);
+}
+
+// ── Local fallback storage ───────────────────────────────
+function grpKey(code) { return 'kap_g2_' + code; }
+function loadGrpLocal(code) { try { return JSON.parse(localStorage.getItem(grpKey(code)) || 'null'); } catch(_) { return null; } }
+function saveGrpLocal(g)    { try { localStorage.setItem(grpKey(g.code), JSON.stringify(g)); } catch(_) {} }
+
+// ── Load group (Firebase or local) ──────────────────────
+function loadGrp(code) {
+  // Always return cached GRP synchronously for UI
+  return GRP && GRP.code === code ? GRP : loadGrpLocal(code);
+}
+
+function saveGrp(g) {
+  saveGrpLocal(g);
+  GRP = g;
+  // Push to Firebase if available
+  if (G_FB_URL) {
+    fbSet('groups/' + g.code, g).catch(function(e) {
+      console.warn('Firebase write failed:', e.message);
+    });
+  }
+}
+
+// ── Pull from Firebase and sync ──────────────────────────
+function fbSync() {
+  if (!G_FB_URL || !GRP) return;
+  fbGet('groups/' + GRP.code).then(function(data) {
+    if (!data || typeof data !== 'object') return;
+    // Merge: Firebase is source of truth for members + slips
+    GRP = data;
+    saveGrpLocal(GRP);
+    refreshGroupUI();
+    gCheckAutoSettle();
+  }).catch(function() {});
+}
+
+// ── Firebase URL management ──────────────────────────────
+function saveFbUrl() {
+  var url = el('gFbUrl') && el('gFbUrl').value.trim();
+  if (!url) { alert('Bitte eine Firebase URL eingeben.'); return; }
+  // Firebase URLs: entweder *.firebaseio.com ODER *.firebasedatabase.app (neuere Regionen)
+  var isFirebase = url.indexOf('firebaseio.com') >= 0 || url.indexOf('firebasedatabase.app') >= 0;
+  if (!isFirebase) {
+    alert('Das sieht nicht wie eine Firebase URL aus.\nBeispiel: https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app');
+    return;
+  }
+  G_FB_URL = url.replace(/\/$/, '');
+  localStorage.setItem('kap_fb_url', G_FB_URL);
+  setFbStatus('Verbinde…', 'var(--draw)');
+  // Test connection with write + read
+  fetch(G_FB_URL.replace(/\/$/, '') + '/ping.json', {
+    method: 'PUT', mode: 'cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ t: Date.now() })
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function(data) {
+    if (data && data.error) {
+      setFbStatus('Permission denied – Bitte Regeln in Firebase auf true setzen (siehe Anleitung)', 'var(--loss)');
+      showFbRulesHint();
+    } else {
+      setFbStatus('Verbunden und bereit', 'var(--win)');
+      var h = el('fbRulesHint'); if (h) h.style.display = 'none';
+    }
+  }).catch(function(e) {
+    setFbStatus('Verbindung fehlgeschlagen: ' + e.message, 'var(--loss)');
+  });
+}
+
+function showFbRulesHint() {
+  var h = el('fbRulesHint');
+  if (h) h.style.display = 'block';
+  // Also scroll setup into view if visible
+  var setup = el('groupSetup');
+  if (setup && setup.style.display !== 'none') setup.scrollIntoView({ behavior: 'smooth' });
+}
+
+function setFbStatus(msg, col) {
+  var s = el('fbStatus');
+  if (s) { s.textContent = msg; s.style.color = col; }
+}
+
+function loadSavedFbUrl() {
+  var saved = localStorage.getItem('kap_fb_url');
+  if (saved) {
+    G_FB_URL = saved;
+    var inp = el('gFbUrl');
+    if (inp) inp.value = saved;
+    setFbStatus('Firebase URL geladen: ' + saved.replace('https://', '').slice(0, 30) + '…', 'var(--win)');
+  }
+}
+
+// ── Code generator ───────────────────────────────────────
+function genCode() {
+  var ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var s  = '';
+  for (var i = 0; i < 6; i++) s += ch[Math.floor(Math.random() * ch.length)];
+  return s;
+}
+
+// ── Odds / format ────────────────────────────────────────
+
+function gFmt(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('de-DE', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  }) + ' EUR';
+}
+
+// ── Init ─────────────────────────────────────────────────
+function initGroupTab() {
+  loadSavedFbUrl();
+  var code = localStorage.getItem('kap_g2_my_grp');
+  var name = localStorage.getItem('kap_g2_my_name');
+  if (code && name) {
+    // Try Firebase first, fallback to local
+    if (G_FB_URL) {
+      fbGet('groups/' + code).then(function(data) {
+        if (data && data.members && data.members[name] !== undefined) {
+          GRP = data; G_ME = name;
+          saveGrpLocal(GRP);
+          showGroupMain();
+        } else {
+          // Not in Firebase group – check local
+          var local = loadGrpLocal(code);
+          if (local && local.members && local.members[name] !== undefined) {
+            GRP = local; G_ME = name;
+            saveGrp(GRP); // push local to Firebase
+            showGroupMain();
+          } else {
+            showGroupSetup();
+          }
+        }
+      }).catch(function() {
+        var local = loadGrpLocal(code);
+        if (local && local.members && local.members[name] !== undefined) {
+          GRP = local; G_ME = name;
+          showGroupMain();
+        } else { showGroupSetup(); }
+      });
+    } else {
+      var local = loadGrpLocal(code);
+      if (local && local.members && local.members[name] !== undefined) {
+        GRP = local; G_ME = name;
+        showGroupMain();
+      } else { showGroupSetup(); }
+    }
+  } else {
+    showGroupSetup();
+  }
+}
+
+function showGroupSetup() {
+  el('groupSetup').style.display = 'block';
+  el('groupMain').style.display  = 'none';
+  loadSavedFbUrl();
+}
+
+// ── Create / Join ─────────────────────────────────────────
+function createGroup() {
+  var name  = el('gMyName').value.trim();
+  var gname = el('gNewName').value.trim();
+  if (!name || !gname) { alert('Bitte Name und Gruppenname eingeben.'); return; }
+
+  var code = genCode();
+  var g = {
+    code: code, name: gname,
+    members: {}, slips: [],
+    created: new Date().toISOString(),
+    creator: name,
+    settings: { startBalance: START_BAL, minStake: 5, maxStake: 0 }
+  };
+  g.members[name] = { balance: START_BAL, history: [] };
+
+  GRP  = g;
+  G_ME = name;
+
+  if (G_FB_URL) {
+    fbSet('groups/' + code, g).then(function() {
+      setFbStatus('Gruppe in Firebase erstellt!', 'var(--win)');
+    }).catch(function(e) {
+      alert('Firebase-Fehler: ' + e.message + '\nGruppe wird lokal gespeichert.');
+    });
+  }
+  saveGrpLocal(g);
+  localStorage.setItem('kap_g2_my_grp',  code);
+  localStorage.setItem('kap_g2_my_name', name);
+  showGroupMain();
+}
+
+function joinGroup() {
+  var name = el('gMyName').value.trim();
+  var code = el('gJoinCode').value.trim().toUpperCase();
+  if (!name || !code) { alert('Bitte Name und Code eingeben.'); return; }
+
+  // Show loading state
+  var joinBtn = document.querySelector('[onclick="joinGroup()"]');
+  if (joinBtn) { joinBtn.textContent = 'Suche...'; joinBtn.disabled = true; }
+  function resetBtn() {
+    if (joinBtn) { joinBtn.textContent = 'Beitreten'; joinBtn.disabled = false; }
+  }
+
+  function doJoin(g) {
+    resetBtn();
+    if (!g) {
+      setFbStatus('Gruppe "' + code + '" nicht in Firebase gefunden.', 'var(--loss)');
+      alert('Gruppe ' + code + ' nicht gefunden. Bitte pruefen: Ist der Code korrekt? Haben beide dieselbe Firebase-URL? URL: ' + G_FB_URL);
+      return;
+    }
+    if (!g.members) g.members = {};
+    if (!g.members[name]) {
+      g.members[name] = { balance: START_BAL, history: [] };
+    }
+    GRP  = g;
+    G_ME = name;
+    saveGrp(g);
+    localStorage.setItem('kap_g2_my_grp',  code);
+    localStorage.setItem('kap_g2_my_name', name);
+    showGroupMain();
+  }
+
+  if (!G_FB_URL) {
+    resetBtn();
+    alert('Bitte zuerst die Firebase-URL eingeben und speichern.');
+    return;
+  }
+
+  // Log exactly what URL we're fetching
+  var fetchUrl = G_FB_URL.replace(/\/$/, '') + '/groups/' + code + '.json';
+  setFbStatus('Suche Gruppe ' + code + '...', 'var(--draw)');
+
+  fetch(fetchUrl, { method: 'GET', mode: 'cors', headers: { 'Cache-Control': 'no-cache' } })
+    .then(function(r) {
+      setFbStatus('Firebase antwortet: HTTP ' + r.status, r.ok ? 'var(--win)' : 'var(--loss)');
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' – Regeln prüfen');
+      return r.json();
+    })
+    .then(function(data) {
+      setFbStatus('Daten erhalten: ' + (data ? 'Gruppe gefunden' : 'null (nicht gefunden)'), data ? 'var(--win)' : 'var(--loss)');
+      if (data && data.error) {
+        throw new Error('Firebase: ' + data.error);
+      }
+      doJoin(data);
+    })
+    .catch(function(e) {
+      resetBtn();
+      setFbStatus('Fehler: ' + e.message, 'var(--loss)');
+      if (e.message.indexOf('Permission') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('403') >= 0) {
+        showFbRulesHint();
+        alert('Firebase Fehler: ' + e.message + ' - Loesung: Firebase Console > Realtime Database > Regeln > .read und .write auf true setzen > Veroeffentlichen');
+      } else {
+        alert('Verbindungsfehler: ' + e.message + ' - Fetch-URL: ' + fetchUrl);
+      }
+    });
+}
+
+function leaveGroup() {
+  if (!confirm('Gruppe verlassen?')) return;
+  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+  stopCountdownTimer();
+  localStorage.removeItem('kap_g2_my_grp');
+  localStorage.removeItem('kap_g2_my_name');
+  GRP = null; G_ME = null; G_SLIP = [];
+  showGroupSetup();
+}
+
+function copyGroupCode() {
+  if (!GRP) return;
+  var text = GRP.code + (G_FB_URL ? ' (Firebase: ' + G_FB_URL + ')' : '');
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  var s = el('gGroupCode'), old = s.textContent;
+  s.textContent = 'Kopiert!';
+  setTimeout(function() { s.textContent = old; }, 1500);
+}
+
+// ── Main view ─────────────────────────────────────────────
+function showGroupMain() {
+  el('groupSetup').style.display = 'none';
+  el('groupMain').style.display  = 'block';
+  el('gGroupName').textContent     = GRP.name;
+  el('gGroupCode').textContent     = GRP.code;
+  el('gMyNameDisplay').textContent = G_ME;
+
+  // Start live sync (every 10 seconds)
+  if (G_UNSUB) clearInterval(G_UNSUB);
+  if (G_FB_URL) {
+    G_UNSUB = setInterval(fbSync, 10000);
+    fbSync();
+  }
+  // Start 1-second countdown timer
+  startCountdownTimer();
+
+  refreshGroup();
+}
+
+function refreshGroup() {
+  if (G_FB_URL) {
+    // Pull fresh data then update UI
+    fbGet('groups/' + GRP.code).then(function(data) {
+      if (data && typeof data === 'object') {
+        GRP = data;
+        saveGrpLocal(GRP);
+      }
+      refreshGroupUI();
+    }).catch(function() { refreshGroupUI(); });
+  } else {
+    GRP = loadGrpLocal(GRP.code) || GRP;
+    refreshGroupUI();
+  }
+}
+
+
+
+// ── Countdown Timer ──────────────────────────────────────────────────────────
+var G_TIMER_INTERVAL = null;
+
+function startCountdownTimer() {
+  if (G_TIMER_INTERVAL) clearInterval(G_TIMER_INTERVAL);
+  updateTimerUI(); // immediate first tick
+  G_TIMER_INTERVAL = setInterval(updateTimerUI, 1000);
+}
+
+function stopCountdownTimer() {
+  if (G_TIMER_INTERVAL) { clearInterval(G_TIMER_INTERVAL); G_TIMER_INTERVAL = null; }
+}
+
+function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+function updateTimerUI() {
+  var box      = el('gTimerBox');
+  var icon     = el('gTimerIcon');
+  var label    = el('gTimerLabel');
+  var dlText   = el('gTimerDeadline');
+  var dEl      = el('gTimerD');
+  var hEl      = el('gTimerH');
+  var mEl      = el('gTimerM');
+  var sEl      = el('gTimerS');
+  var hint     = el('gMatchdayHint');
+  var submitBtn= el('gSubmitBtn');
+
+  if (!box || !dEl) return;
+
+  var dl  = getMatchdayDeadline();
+  var now = new Date();
+
+  if (!dl) {
+    // No matches loaded yet
+    dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '--';
+    if (dlText) dlText.textContent = 'Keine Spiele geladen';
+    return;
+  }
+
+  var diff = dl - now; // ms remaining
+
+  if (diff <= 0) {
+    // EXPIRED
+    box.className = 'deadline-timer timer-done';
+    if (icon)  icon.textContent = '🔒';
+    if (label) label.textContent = 'Abgabe geschlossen';
+    dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '00';
+    var dlDate = dl.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'})
+               + ' ' + dl.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr';
+    if (dlText) dlText.textContent = 'Anpfiff war ' + dlDate;
+
+    // Show status hint
+    if (hint) {
+      var mySlip = gMySlipThisMatchday();
+      hint.style.display = 'block';
+      hint.textContent = mySlip
+        ? 'Schein Spieltag ' + (ST.curMD||'?') + ' abgegeben – warte auf Ergebnisse.'
+        : 'Abgabefrist abgelaufen – kein Schein mehr moeglich.';
+      hint.style.color = mySlip ? 'var(--draw)' : 'var(--loss)';
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    stopCountdownTimer();
+    return;
+  }
+
+  // Still open
+  var mySlip = gMySlipThisMatchday();
+  if (mySlip) {
+    box.className = 'deadline-timer';
+    box.style.borderColor = 'rgba(255,179,71,.3)';
+    if (icon)  icon.textContent = '✅';
+    if (label) label.textContent = 'Schein abgegeben';
+  } else {
+    // Urgent if < 1 hour
+    box.className = diff < 3600000 ? 'deadline-timer timer-urgent' : 'deadline-timer';
+    box.style.borderColor = '';
+    if (icon)  icon.textContent = diff < 3600000 ? '🚨' : '⏳';
+    if (label) label.textContent = 'Noch Zeit für die Abgabe';
+  }
+
+  var totalSecs = Math.floor(diff / 1000);
+  var days  = Math.floor(totalSecs / 86400);
+  var hours = Math.floor((totalSecs % 86400) / 3600);
+  var mins  = Math.floor((totalSecs % 3600) / 60);
+  var secs  = totalSecs % 60;
+
+  dEl.textContent = days > 0 ? String(days) : '00';
+  hEl.textContent = pad2(hours);
+  mEl.textContent = pad2(mins);
+  sEl.textContent = pad2(secs);
+
+  // Color urgency
+  var numColor = diff < 3600000 ? 'var(--loss)' : diff < 3*3600000 ? 'var(--draw)' : 'var(--ac)';
+  [dEl,hEl,mEl,sEl].forEach(function(e){ if(e) e.style.color = numColor; });
+
+  // Hide days block if 0
+  var dBlock = dEl && dEl.parentElement;
+  if (dBlock) dBlock.style.display = days === 0 ? 'none' : 'block';
+  var dSep   = dBlock && dBlock.nextElementSibling;
+  if (dSep)  dSep.style.display = days === 0 ? 'none' : '';
+
+  // Deadline date string
+  var dlDate = dl.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'short'})
+             + ' · ' + dl.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr';
+  if (dlText) dlText.textContent = 'Anpfiff: ' + dlDate;
+
+  // Hide hint when timer is running
+  if (hint) hint.style.display = 'none';
+}
+
+// ── Spieltag-Deadline & Auto-Settle ─────────────────────
+// Deadline = Anpfiff des frühesten Spiels des aktuellen Spieltags
+
+function parseMatchTime(dtStr) {
+  // OpenLigaDB gibt Zeiten in MEZ/MESZ (Europe/Berlin) ohne Timezone-Suffix.
+  // Wir hängen explizit +02:00 (MESZ, Sommerzeit) an.
+  // Bundesliga-Saison läuft Aug-Mai, davon sind Aug-Okt und März-Mai MESZ (+02:00),
+  // Nov-Feb MEZ (+01:00). Einfachheitshalber: wenn Monat 3-10 → +02:00, sonst +01:00.
+  if (!dtStr) return null;
+  var m = dtStr.match(/^(\d{4})-(\d{2})/);
+  var month = m ? parseInt(m[2]) : 6;
+  var offset = (month >= 3 && month <= 10) ? '+02:00' : '+01:00';
+  // Only add offset if not already present
+  if (dtStr.indexOf('+') < 0 && dtStr.indexOf('Z') < 0) {
+    dtStr = dtStr + offset;
+  }
+  return new Date(dtStr);
+}
+
+function getMatchdayDeadline() {
+  // Nur Spiele des AKTUELLEN Spieltags (nicht nächster Spieltag)
+  // und nur nicht abgeschlossene Spiele
+  var matches = ST.matches.filter(function(m) {
+    return !m.matchIsFinished && m.leagueMatchday === ST.curMD;
+  });
+  // Fallback: falls leagueMatchday nicht gesetzt, alle nicht-fertigen nehmen
+  if (!matches.length) {
+    matches = ST.matches.filter(function(m) { return !m.matchIsFinished; });
+  }
+  if (!matches.length) return null;
+  var times = matches
+    .map(function(m) { return m.matchDateTime ? parseMatchTime(m.matchDateTime).getTime() : Infinity; })
+    .filter(function(t) { return t !== Infinity && !isNaN(t); });
+  if (!times.length) return null;
+  return new Date(Math.min.apply(null, times));
+}
+
+function isPastDeadline() {
+  var dl = getMatchdayDeadline();
+  if (!dl) return false;
+  return new Date() >= dl;
+}
+
+function deadlineText() {
+  var dl = getMatchdayDeadline();
+  if (!dl) return 'Keine Spiele geladen';
+  var now = new Date();
+  if (now >= dl) return 'Abgabefrist abgelaufen (Anpfiff war ' + dl.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr)';
+  var diff = dl - now;
+  var h    = Math.floor(diff / 3600000);
+  var m    = Math.floor((diff % 3600000) / 60000);
+  var ds   = dl.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+  var ts   = dl.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if (h > 24) {
+    var days = Math.floor(h/24);
+    return 'Abgabe bis ' + ds + ' ' + ts + ' Uhr (' + days + 'd ' + (h%24) + 'h)';
+  }
+  return 'Abgabe noch ' + (h > 0 ? h + 'h ' : '') + m + 'min – bis ' + ds + ' ' + ts + ' Uhr';
+}
+
+// Prüfe nach jedem Sync ob alle Spiele beendet sind → automatisch auswerten
+function getLastMatchTime() {
+  // Letzter Anpfiff des aktuellen Spieltags
+  var curMatches = ST.matches.filter(function(m) { return m.leagueMatchday === ST.curMD; });
+  if (!curMatches.length) curMatches = ST.matches;
+  var times = curMatches.map(function(m) {
+    return m.matchDateTime ? parseMatchTime(m.matchDateTime).getTime() : 0;
+  }).filter(function(t) { return t > 0; });
+  return times.length ? Math.max.apply(null, times) : 0;
+}
+
+function gCheckAutoSettle() {
+  if (!GRP || !ST.matches.length) return;
+  // Auto-Auswertung: 3 Stunden nach Anpfiff des LETZTEN Spiels
+  var lastKickoff = getLastMatchTime();
+  if (!lastKickoff) return;
+  var settleAfter = lastKickoff + 3 * 3600 * 1000; // +3h
+  if (Date.now() < settleAfter) return; // noch nicht Zeit
+
+  // Lade echte Ergebnisse und werte alle offenen Scheine dieses Spieltags aus
+  var season = ST.curSeason || (function(){ var d=new Date(); return (d.getMonth()+1)>=7?d.getFullYear():d.getFullYear()-1; })();
+  apiFetch('/getmatchdata/bl1/' + season).then(function(all) {
+    var resMap = {};
+    all.filter(function(m){ return m.matchIsFinished; }).forEach(function(m) {
+      var r = null;
+      if (m.matchResults) { for (var i=0;i<m.matchResults.length;i++) { if (m.matchResults[i].resultTypeID===2){r=m.matchResults[i];break;} } }
+      if (!r && m.matchResults && m.matchResults.length) r = m.matchResults[0];
+      if (r) resMap[m.matchID] = { g1: r.pointsTeam1, g2: r.pointsTeam2 };
+    });
+
+    // Reload fresh from Firebase
+    (G_FB_URL ? fbGet('groups/' + GRP.code) : Promise.resolve(loadGrpLocal(GRP.code))).then(function(freshGrp) {
+      if (!freshGrp) return;
+      var changed = false;
+      freshGrp.slips = (freshGrp.slips || []).map(function(slip) {
+        if (slip.matchday !== ST.curMD) return slip;
+        if (slip.result !== 'pending') return slip; // already settled
+        slip.bets = slip.bets.map(function(bet) {
+          if (bet.outcome !== 'pending') return bet;
+          var res = resMap[bet.matchID];
+          if (!res) return bet;
+          var out = evaluateTip(bet.tipId, res.g1, res.g2);
+          if (out) { bet.outcome = out; changed = true; }
+          return bet;
+        });
+        var allBetsDone = slip.bets.every(function(b){ return b.outcome !== 'pending'; });
+        var allWon      = slip.bets.every(function(b){ return b.outcome === 'win'; });
+        if (allBetsDone) {
+          slip.result = allWon ? 'win' : 'loss';
+          changed = true;
+          if (allWon && freshGrp.members[slip.member]) {
+            freshGrp.members[slip.member].balance =
+              Math.round((freshGrp.members[slip.member].balance + slip.potPayout) * 100) / 100;
+          }
+        }
+        return slip;
+      });
+      if (changed) {
+        GRP = freshGrp;
+        saveGrp(GRP);
+        refreshGroupUI();
+      }
+    }).catch(function(){});
+  }).catch(function(){});
+}
+
+function refreshGroupUI() {
+  if (!GRP || !G_ME) return;
+  var me = GRP.members[G_ME] || { balance: START_BAL };
+  el('gMyBalance').textContent = gFmt(me.balance);
+
+  // Timer handles deadline display – just trigger an update
+  updateTimerUI();
+
+  var fb = el('fbLiveTag');
+  if (fb) fb.style.display = G_FB_URL ? 'inline' : 'none';
+
+  // Trigger auto-settle check after every sync
+  gCheckAutoSettle();
+
+  renderGMatchList();
+  renderGSlip();
+  renderGLeaderboard();
+  renderGAllSlips();
+  renderGMySlips();
+  renderAdminPanel();
+}
+
+function gMySlipThisMatchday() {
+  var md = ST.curMD;
+  if (!md || !GRP.slips) return null;
+  return GRP.slips.find(function(s) { return s.member === G_ME && s.matchday === md; }) || null;
+}
+
+function canStillBet() {
+  // Kann man noch wetten? Nur wenn: Deadline nicht abgelaufen UND noch kein Schein
+  if (isPastDeadline()) return false;
+  if (gMySlipThisMatchday()) return false;
+  return true;
+}
+
+// ── Match list ────────────────────────────────────────────
+function renderGMatchList() {
+  var list = el('gMatchList');
+  list.innerHTML = '';
+  var canBet = canStillBet();
+  var past = isPastDeadline();
+
+  if (!ST.matches.length) {
+    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Keine Spiele geladen.'));
+    return;
+  }
+
+  var tipLabels2 = {
+    home:'1 Heimsieg', draw:'X Unentschieden', away:'2 Auswärtssieg',
+    '1x':'1X', 'x2':'X2', '12':'12',
+    o25:'Über 2,5', u25:'Unter 2,5', btts:'Beide treffen'
+  };
+
+  // Nur aktuelle Spieltag-Begegnungen anzeigen
+  var curMatches = ST.matches.filter(function(m) {
+    return m.leagueMatchday === ST.curMD;
+  });
+  if (!curMatches.length) curMatches = ST.matches; // fallback
+
+  curMatches.forEach(function(m) {
+    var hN = m.team1 ? (m.team1.teamName || '?') : '?';
+    var aN = m.team2 ? (m.team2.teamName || '?') : '?';
+    var pr = calcProbs(m.matchID || 0, hN, aN);
+    var dt = m.matchDateTime ? new Date(m.matchDateTime) : null;
+    var dStr = dt ? dt.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+
+    var inSlip = G_SLIP.some(function(s) { return s.matchID === m.matchID; });
+    var card   = mk('div', { cls: 'slip-match-row' + (inSlip ? ' in-slip' : '') });
+    card.id    = 'gm' + m.matchID;
+    if (!canBet) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
+
+    var top = mk('div', { cls: 'smr-top' });
+    ap(top, mk('div', { cls: 'smr-teams' }, hN + ' – ' + aN));
+    ap(top, mk('div', { cls: 'smr-date' }, dStr));
+    ap(card, top);
+
+    var tipIds = ['home','draw','away','1x','x2','12','o25','u25','o35','u35','btts','nbtts'];
+    var mainTips = tipIds.map(function(id) {
+      return { id: id, prob: calcTipProb(id, pr.wH, pr.wD, pr.wA, pr.xH, pr.xA) };
+    });
+
+    var tips = mk('div', { cls: 'smr-tips' });
+    mainTips.forEach(function(t) {
+      var odds   = gOdds(t.prob);
+      var curTip = G_SLIP.find(function(s) { return s.matchID === m.matchID; });
+      var isSel  = curTip && curTip.tipId === t.id;
+      var btn    = mk('button', { cls: 'tip-btn' + (isSel ? ' sel' : '') });
+      var l1 = mk('span', {}, tipLabels2[t.id] || t.id);
+      var l2 = mk('span', { style: 'margin-left:.28rem;font-family:DM Mono,monospace;font-size:.62rem;color:' + (isSel?'var(--tx)':'var(--ac)') });
+      l2.textContent = String(odds);
+      ap(btn, l1); ap(btn, l2);
+      if (canBet) {
+      (function(mid, tipId, tipLbl, prob, hn, an, ds) {
+        btn.addEventListener('click', function() {
+          gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
+        });
+      })(m.matchID, t.id, tipLabels2[t.id]||t.id, t.prob, hN, aN, dStr);
+      }
+      ap(tips, btn);
+    });
+    ap(card, tips);
+    ap(list, card);
+  });
+}
+
+function gToggleTip(matchID, tipId, tipLbl, prob, hN, aN, dStr) {
+  var idx = G_SLIP.findIndex(function(s) { return s.matchID === matchID; });
+  if (idx >= 0) {
+    if (G_SLIP[idx].tipId === tipId) G_SLIP.splice(idx, 1);
+    else G_SLIP[idx] = { matchID:matchID, tipId:tipId, tipLbl:tipLbl, prob:prob, hN:hN, aN:aN, dStr:dStr };
+  } else {
+    G_SLIP.push({ matchID:matchID, tipId:tipId, tipLbl:tipLbl, prob:prob, hN:hN, aN:aN, dStr:dStr });
+  }
+  renderGMatchList();
+  renderGSlip();
+}
+
+// ── Slip panel ────────────────────────────────────────────
+function renderGSlip() {
+  var items     = el('gSlipItems');
+  var stats     = el('gSlipStats');
+  var submitBtn = el('gSubmitBtn');
+  items.innerHTML = '';
+
+  var canBet2 = canStillBet();
+  if (submitBtn) submitBtn.disabled = !canBet2 || !G_SLIP.length;
+
+  if (!G_SLIP.length) {
+    ap(items, mk('div', { style:'color:var(--tx3);font-size:.73rem;text-align:center;padding:1.2rem 0' },
+      gMySlipThisMatchday() ? 'Schein abgegeben.' : isPastDeadline() ? 'Abgabefrist abgelaufen.' : 'Wähle mindestens ein Spiel'));
+    if (stats) stats.style.display = 'none';
+    return;
+  }
+
+  var lbl = mk('div', { style:'font-size:.65rem;color:var(--tx3);margin-bottom:.38rem;font-family:DM Mono,monospace' });
+  lbl.textContent = G_SLIP.length === 1 ? 'Einzelwette' : G_SLIP.length + '-Weg Kombiwette';
+  ap(items, lbl);
+
+  var totalOdds = 1;
+  G_SLIP.forEach(function(s, i) {
+    var o = gOdds(s.prob);
+    totalOdds *= o;
+    var row = mk('div', { cls: 'slip-item' });
+    var num = mk('div', { style:'font-family:Bebas Neue,sans-serif;font-size:.88rem;color:var(--tx3);flex-shrink:0;width:15px' }, String(i+1));
+    ap(row, num);
+    var info = mk('div', { style:'flex:1;min-width:0' });
+    ap(info, mk('div', { cls:'slip-teams' }, s.hN + ' – ' + s.aN));
+    ap(info, mk('div', { cls:'slip-tip-lbl' }, s.tipLbl + ' · ' + s.dStr));
+    ap(row, info);
+    ap(row, mk('div', { cls:'slip-item-odds' }, String(o)));
+    if (canBet2) {
+      var rm = mk('button', { cls:'slip-remove' }, 'x');
+      (function(mid) { rm.addEventListener('click', function() {
+        G_SLIP = G_SLIP.filter(function(x) { return x.matchID !== mid; });
+        renderGMatchList(); renderGSlip();
+      }); })(s.matchID);
+      ap(row, rm);
+    }
+    ap(items, row);
+  });
+
+  totalOdds = Math.round(totalOdds * 100) / 100;
+  var combined = G_SLIP.reduce(function(acc, s) { return acc * (s.prob/100); }, 1);
+  var pct = Math.round(combined * 1000) / 10;
+  var col = pct >= 40 ? 'var(--win)' : pct >= 10 ? 'var(--draw)' : 'var(--loss)';
+
+  if (stats) {
+    stats.style.display = 'block';
+    el('gTotalOdds').textContent = totalOdds;
+    el('gTotalProb').textContent = pct + '%';
+    el('gTotalProb').style.color = col;
+    var qb = el('gQuickBtns');
+    if (qb && !qb.dataset.built) {
+      qb.dataset.built = '1';
+      var bal = (GRP.members[G_ME] || {}).balance || 0;
+      [10, 25, 50, 100, 250].filter(function(a) { return a <= bal; }).forEach(function(amt) {
+        var b = mk('button', { style:'background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:5px;padding:.2rem .48rem;font-size:.67rem;cursor:pointer;font-family:DM Sans,sans-serif' });
+        b.textContent = amt + ' EUR';
+        b.addEventListener('click', function() { el('gStakeIn').value = amt; gUpdateCalc(); });
+        ap(qb, b);
+      });
+    }
+    gUpdateCalc();
+  }
+}
+
+function gUpdateCalc() {
+  var stake = parseFloat((el('gStakeIn') && el('gStakeIn').value) || '0') || 0;
+  var totalOdds = G_SLIP.reduce(function(acc, s) { return acc * gOdds(s.prob); }, 1);
+  totalOdds = Math.round(totalOdds * 100) / 100;
+  if (stake > 0) {
+    var payout = Math.round(stake * totalOdds * 100) / 100;
+    if (el('gWinPreview'))    el('gWinPreview').textContent    = gFmt(payout);
+    if (el('gProfitPreview')) el('gProfitPreview').textContent = '+' + gFmt(payout - stake);
+  } else {
+    if (el('gWinPreview'))    el('gWinPreview').textContent    = '-';
+    if (el('gProfitPreview')) el('gProfitPreview').textContent = '-';
+  }
+}
+
+function gClearSlip() { G_SLIP = []; renderGMatchList(); renderGSlip(); }
+
+// ── Submit ────────────────────────────────────────────────
+function gSubmitSlip() {
+  if (!G_SLIP.length) return;
+  if (!canStillBet()) {
+    if (isPastDeadline()) { alert('Die Abgabefrist ist abgelaufen. Wetten koennen nur bis Anpfiff des ersten Spiels abgegeben werden.'); }
+    else { alert('Du hast diesen Spieltag bereits einen Schein abgegeben.'); }
+    return;
+  }
+  var stake = parseFloat((el('gStakeIn') && el('gStakeIn').value) || '0') || 0;
+  var bal   = (GRP.members[G_ME] || {}).balance || 0;
+  if (stake <= 0)  { alert('Bitte einen Einsatz eingeben.'); return; }
+  if (stake > bal) { alert('Nicht genug Guthaben. Du hast ' + gFmt(bal) + '.'); return; }
+  var cfg = GRP.settings || {};
+  var minS = cfg.minStake || 0;
+  var maxS = cfg.maxStake || 0;
+  if (minS > 0 && stake < minS) { alert('Mindesteinsatz ist ' + gFmt(minS) + '.'); return; }
+  if (maxS > 0 && stake > maxS) { alert('Höchsteinsatz ist ' + gFmt(maxS) + '.'); return; }
+
+  var totalOdds = Math.round(G_SLIP.reduce(function(acc, s) { return acc * gOdds(s.prob); }, 1) * 100) / 100;
+  var combined  = G_SLIP.reduce(function(acc, s) { return acc * (s.prob/100); }, 1);
+  var pct       = Math.round(combined * 1000) / 10;
+
+  var slip = {
+    id:         Date.now(),
+    member:     G_ME,
+    matchday:   ST.curMD,
+    date:       new Date().toLocaleDateString('de-DE', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    stake:      stake,
+    totalOdds:  totalOdds,
+    potPayout:  Math.round(stake * totalOdds * 100) / 100,
+    prob:       pct,
+    result:     'pending',
+    bets: G_SLIP.map(function(s) {
+      return { matchID:s.matchID, hN:s.hN, aN:s.aN, dStr:s.dStr,
+               tipId:s.tipId, tipLbl:s.tipLbl, prob:s.prob, odds:gOdds(s.prob), outcome:'pending' };
+    })
+  };
+
+  // Update local state
+  if (!GRP.slips) GRP.slips = [];
+  if (!GRP.members[G_ME]) GRP.members[G_ME] = { balance: START_BAL, history: [] };
+  GRP.members[G_ME].balance = Math.round((GRP.members[G_ME].balance - stake) * 100) / 100;
+  GRP.slips.push(slip);
+  saveGrp(GRP);
+
+  G_SLIP = [];
+  var qb = el('gQuickBtns');
+  if (qb) { qb.innerHTML = ''; qb.dataset.built = ''; }
+  if (el('gStakeIn')) el('gStakeIn').value = '';
+
+  refreshGroup();
+  alert('Schein abgegeben!\nEinsatz: ' + gFmt(stake) + '\nGesamtquote: ' + totalOdds + '\nMoglicher Gewinn: ' + gFmt(slip.potPayout));
+}
+
+// ── Settle ────────────────────────────────────────────────
+function gSettleBet(slipId, matchId, outcome) {
+  if (!GRP.slips) return;
+  var slip = GRP.slips.find(function(s) { return s.id === slipId && s.member === G_ME; });
+  if (!slip) return;
+  slip.bets = slip.bets.map(function(b) {
+    return b.matchID === matchId ? Object.assign({}, b, { outcome: outcome }) : b;
+  });
+  var allDone = slip.bets.every(function(b) { return b.outcome !== 'pending'; });
+  var allWon  = slip.bets.every(function(b) { return b.outcome === 'win'; });
+  if (allDone) {
+    slip.result = allWon ? 'win' : 'loss';
+    if (allWon) {
+      GRP.members[G_ME].balance = Math.round((GRP.members[G_ME].balance + slip.potPayout) * 100) / 100;
+    }
+  }
+  saveGrp(GRP);
+  refreshGroup();
+}
+
+function gAutoSettle(slipId) {
+  var season = ST.curSeason || (function() { var d=new Date(); return (d.getMonth()+1)>=7?d.getFullYear():d.getFullYear()-1; })();
+  apiFetch('/getmatchdata/bl1/' + season).then(function(all) {
+    var resMap = {};
+    all.filter(function(m) { return m.matchIsFinished; }).forEach(function(m) {
+      var r = null;
+      if (m.matchResults) { for (var i=0;i<m.matchResults.length;i++) { if (m.matchResults[i].resultTypeID===2){r=m.matchResults[i];break;} } }
+      if (!r && m.matchResults && m.matchResults.length) r = m.matchResults[0];
+      if (r) resMap[m.matchID] = { g1:r.pointsTeam1, g2:r.pointsTeam2 };
+    });
+    var slip = GRP.slips && GRP.slips.find(function(s) { return s.id === slipId && s.member === G_ME; });
+    if (!slip) return;
+    var settled = 0;
+    slip.bets = slip.bets.map(function(b) {
+      if (b.outcome !== 'pending') return b;
+      var res = resMap[b.matchID];
+      if (!res) return b;
+      var out = evaluateTip(b.tipId, res.g1, res.g2);
+      if (out) { b.outcome = out; settled++; }
+      return b;
+    });
+    var allDone = slip.bets.every(function(b) { return b.outcome !== 'pending'; });
+    var allWon  = slip.bets.every(function(b) { return b.outcome === 'win'; });
+    if (allDone) {
+      slip.result = allWon ? 'win' : 'loss';
+      if (allWon) GRP.members[G_ME].balance = Math.round((GRP.members[G_ME].balance + slip.potPayout) * 100) / 100;
+    }
+    saveGrp(GRP);
+    refreshGroup();
+    alert(settled + ' Ergebnis(se) geladen.' + (allDone ? (allWon ? ' GEWONNEN! +' + gFmt(slip.potPayout - slip.stake) : ' Leider verloren.') : ' Noch nicht alle Spiele beendet.'));
+  }).catch(function(e) { alert('Fehler: ' + e.message); });
+}
+
+// ── Render my slips ───────────────────────────────────────
+function renderGMySlips() {
+  var cont = el('gMySlips');
+  cont.innerHTML = '';
+  if (!GRP.slips) { ap(cont, mk('div', { style:'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Noch keine Scheine.')); return; }
+  var mine = GRP.slips.filter(function(s) { return s.member === G_ME; }).slice().reverse();
+  if (!mine.length) { ap(cont, mk('div', { style:'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Noch keine Scheine abgegeben.')); return; }
+
+  mine.forEach(function(slip) {
+    var wins  = slip.bets.filter(function(b) { return b.outcome==='win'; }).length;
+    var losses= slip.bets.filter(function(b) { return b.outcome==='loss'; }).length;
+    var pend  = slip.bets.filter(function(b) { return b.outcome==='pending'; }).length;
+    var allDone= pend===0, allWon= allDone && wins===slip.bets.length;
+
+    var card = mk('div', { cls:'sub-slip' });
+    if (allWon) card.style.borderColor='rgba(61,220,132,.4)';
+    else if (allDone) card.style.borderColor='rgba(255,90,90,.3)';
+
+    var hdr  = mk('div', { cls:'sub-slip-hdr' });
+    var left = mk('div');
+    ap(left, mk('div', { style:'font-size:.74rem;font-weight:600' },
+      (slip.bets.length===1?'Einzelwette':slip.bets.length+'-Weg Kombi') + ' · Spieltag ' + (slip.matchday||'?')));
+    ap(left, mk('div', { cls:'sub-slip-date' }, slip.date + ' · Einsatz: ' + gFmt(slip.stake)));
+    ap(hdr, left);
+    var right = mk('div', { style:'text-align:right' });
+    var odEl  = mk('div', { cls:'sub-slip-prob', style:'color:var(--ac)' }, String(slip.totalOdds));
+    ap(right, odEl);
+    ap(right, mk('div', { style:'font-size:.63rem;color:var(--tx3)' }, 'Gesamtquote'));
+    ap(hdr, right); ap(card, hdr);
+
+    // Payout chips
+    var pr2 = mk('div', { style:'display:flex;gap:.4rem;margin:.4rem 0;flex-wrap:wrap' });
+    function chip2(l, v, col) {
+      var ch = mk('div', { style:'background:var(--bg3);border-radius:5px;padding:.2rem .5rem;flex:1;min-width:70px' });
+      ap(ch, mk('div', { style:'font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px' }, l));
+      ap(ch, mk('div', { style:'font-size:.72rem;font-weight:600;font-family:DM Mono,monospace;color:'+col }, v));
+      return ch;
+    }
+    ap(pr2, chip2('Einsatz', gFmt(slip.stake), 'var(--tx)'));
+    ap(pr2, chip2('Moglicher Gewinn', gFmt(slip.potPayout), allWon?'var(--win)':allDone?'var(--loss)':'var(--draw)'));
+    if (allDone) ap(pr2, chip2('Ergebnis', allWon?'+'+gFmt(slip.potPayout-slip.stake):'-'+gFmt(slip.stake), allWon?'var(--win)':'var(--loss)'));
+    ap(card, pr2);
+
+    slip.bets.forEach(function(bet) {
+      var row = mk('div', { cls:'sub-bet-row' });
+      var dot = mk('div', { cls:'out-dot' });
+      dot.style.background = bet.outcome==='win'?'var(--win)':bet.outcome==='loss'?'var(--loss)':'var(--tx3)';
+      ap(row, dot);
+      var info = mk('div', { style:'flex:1;min-width:0' });
+      ap(info, mk('div', { cls:'sub-bet-teams' }, bet.hN + ' – ' + bet.aN));
+      ap(info, mk('div', { cls:'sub-bet-tip' }, bet.tipLbl + ' @' + (bet.odds||'?') + ' · ' + bet.dStr));
+      ap(row, info);
+      // Auto-settle only
+      var oc = mk('span', { style:'font-size:.7rem;font-weight:600;flex-shrink:0' });
+      if (bet.outcome==='pending') { oc.textContent='⏳'; oc.style.color='var(--tx3)'; }
+      else { oc.textContent=bet.outcome==='win'?'✓':'✗'; oc.style.color=bet.outcome==='win'?'var(--win)':'var(--loss)'; }
+      ap(row, oc);
+      ap(card, row);
+    });
+
+    // Result bar
+    var bar = mk('div', { cls:'slip-result-bar' });
+    function sr2(v, l, col) {
+      var s = mk('div', { cls:'sr-stat' });
+      var vv= mk('div', { cls:'sr-val' }, String(v)); vv.style.color=col; ap(s,vv);
+      ap(s, mk('div', { style:'font-size:.59rem;color:var(--tx3)' }, l));
+      return s;
+    }
+    ap(bar, sr2(wins,'Richtig','var(--win)')); ap(bar, sr2(losses,'Falsch','var(--loss)')); ap(bar, sr2(pend,'Offen','var(--tx3))'));
+    if (allDone) {
+      var tot = mk('div', { cls:'sr-stat', style:'flex:2;background:'+(allWon?'rgba(61,220,132,.1)':'rgba(255,90,90,.07)') });
+      var tv  = mk('div', { cls:'sr-val' }, allWon?'GEWONNEN':'VERLOREN');
+      tv.style.color=allWon?'var(--win)':'var(--loss)'; tv.style.fontSize='.76rem'; ap(tot,tv); ap(bar,tot);
+    }
+    ap(card, bar);
+
+    if (pend > 0) {
+      var pi = mk('div', { style: 'font-size:.66rem;color:var(--tx3);margin-top:.38rem;text-align:center' });
+      pi.textContent = 'Automatische Auswertung 3h nach letztem Anpfiff';
+      ap(card, pi);
+    }
+    ap(cont, card);
+  });
+}
+
+// ── Leaderboard ───────────────────────────────────────────
+function renderGLeaderboard() {
+  var lb = el('gLeaderboard');
+  lb.innerHTML = '';
+  var members = Object.keys(GRP.members).map(function(name) {
+    return { name:name, balance:(GRP.members[name]||{}).balance||0 };
+  }).sort(function(a,b) { return b.balance - a.balance; });
+
+  members.forEach(function(m, i) {
+    var row = mk('div', { cls:'lb-row' });
+    var rk  = mk('div', { cls:'lb-rank' }, String(i+1));
+    rk.style.color = i===0?'var(--ac)':i===1?'#ccc':i===2?'#cd7f32':'var(--tx3)';
+    ap(row, rk);
+    var nm = mk('div', { cls:'lb-name' }, m.name+(m.name===G_ME?' (du)':''));
+    if (m.name===G_ME) nm.style.color='var(--ac)';
+    ap(row, nm);
+    var rr = mk('div', { style:'text-align:right' });
+    var bl = mk('div', { cls:'lb-balance' }, gFmt(m.balance));
+    bl.style.color = m.balance>=START_BAL?'var(--win)':'var(--loss)';
+    ap(rr, bl);
+    var diff = m.balance - START_BAL;
+    var df = mk('div', { cls:'lb-diff' }, (diff>=0?'+':'')+gFmt(diff));
+    df.style.color = diff>=0?'var(--win)':'var(--loss)';
+    ap(rr, df); ap(row, rr); ap(lb, row);
+  });
+}
+
+// ── All slips ─────────────────────────────────────────────
+function renderGAllSlips() {
+  var cont = el('gAllSlips');
+  cont.innerHTML = '';
+  if (!GRP.slips || !GRP.slips.length) {
+    ap(cont, mk('div', { style:'color:var(--tx3);font-size:.72rem;text-align:center;padding:.8rem 0' }, 'Noch keine Scheine'));
+    return;
+  }
+
+  // Group slips by matchday, then by member
+  var curMd = ST.curMD;
+
+  // Filter to current matchday slips, sorted by member
+  var mdSlips = GRP.slips.filter(function(s){ return s.matchday === curMd; });
+  var otherSlips = mdSlips.filter(function(s){ return s.member !== G_ME; });
+  var mySlip     = mdSlips.find(function(s){ return s.member === G_ME; });
+
+  // Section header
+  ap(cont, mk('div', { style:'font-size:.65rem;color:var(--tx3);font-family:DM Mono,monospace;margin-bottom:.5rem' }, 'Spieltag ' + (curMd||'?') + ' – ' + mdSlips.length + ' Schein(e)'));
+
+  if (!mdSlips.length) {
+    ap(cont, mk('div', { style:'color:var(--tx3);font-size:.72rem;text-align:center;padding:.6rem 0' }, 'Noch keine Scheine diesen Spieltag'));
+    return;
+  }
+
+  // Show all slips expanded – but hide tips until deadline passed (anti-cheat)
+  var past = isPastDeadline();
+
+  mdSlips.forEach(function(slip) {
+    var isMe = slip.member === G_ME;
+    var wins  = slip.bets.filter(function(b){ return b.outcome==='win'; }).length;
+    var losses= slip.bets.filter(function(b){ return b.outcome==='loss'; }).length;
+    var pend  = slip.bets.filter(function(b){ return b.outcome==='pending'; }).length;
+    var allDone = pend === 0;
+    var allWon  = allDone && wins === slip.bets.length;
+
+    var card = mk('div', { style:'background:var(--bg3);border-radius:8px;padding:.7rem .85rem;margin-bottom:.5rem;border-left:3px solid '+(isMe?'var(--ac)':'var(--blue)') });
+
+    // Header row
+    var hdr = mk('div', { style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem' });
+    var nameEl = mk('div', { style:'font-size:.78rem;font-weight:600;color:'+(isMe?'var(--ac)':'var(--tx)') });
+    nameEl.textContent = slip.member + (isMe?' (du)':'');
+    ap(hdr, nameEl);
+    var right = mk('div', { style:'text-align:right' });
+    var oddsEl = mk('div', { style:'font-family:Bebas Neue,sans-serif;font-size:1rem;color:var(--ac)' }, String(slip.totalOdds));
+    ap(right, oddsEl);
+    var cnt = mk('div', { style:'font-size:.62rem;color:var(--tx3)' }, slip.bets.length + (slip.bets.length===1?'-Weg':'er-Kombi') + ' · ' + gFmt(slip.stake));
+    ap(right, cnt);
+    ap(hdr, right);
+    ap(card, hdr);
+
+    // Bets detail – hidden before deadline (anti-cheat) unless it's my own slip
+    if (!past && !isMe) {
+      var hidden = mk('div', { style:'font-size:.7rem;color:var(--tx3);font-style:italic;padding:.3rem 0' });
+      hidden.textContent = 'Tipps werden nach Anpfiff sichtbar';
+      ap(card, hidden);
+    } else {
+      slip.bets.forEach(function(bet) {
+        var row = mk('div', { style:'display:flex;align-items:center;gap:.4rem;padding:.22rem 0;font-size:.73rem' });
+        var dot = mk('div', { style:'width:6px;height:6px;border-radius:50%;flex-shrink:0;background:'+(bet.outcome==='win'?'var(--win)':bet.outcome==='loss'?'var(--loss)':'var(--tx3)') });
+        ap(row, dot);
+        var info = mk('div', { style:'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' });
+        info.textContent = bet.hN + ' – ' + bet.aN;
+        ap(row, info);
+        var tipEl = mk('div', { style:'font-size:.67rem;color:var(--ac);font-family:DM Mono,monospace;flex-shrink:0' });
+        tipEl.textContent = bet.tipLbl + ' @' + (bet.odds||'?');
+        ap(row, tipEl);
+        if (bet.outcome !== 'pending') {
+          var oc = mk('div', { style:'font-size:.67rem;font-weight:600;flex-shrink:0;color:'+(bet.outcome==='win'?'var(--win)':'var(--loss)') });
+          oc.textContent = bet.outcome==='win'?'✓':'✗';
+          ap(row, oc);
+        }
+        ap(card, row);
+      });
+    }
+
+    // Result / payout
+    if (allDone) {
+      var resRow = mk('div', { style:'display:flex;justify-content:space-between;align-items:center;margin-top:.45rem;padding-top:.4rem;border-top:1px solid var(--bo)' });
+      var resEl = mk('div', { style:'font-size:.75rem;font-weight:700;color:'+(allWon?'var(--win)':'var(--loss)') });
+      resEl.textContent = allWon ? 'GEWONNEN' : 'VERLOREN';
+      ap(resRow, resEl);
+      var payEl = mk('div', { style:'font-size:.72rem;font-weight:600;color:'+(allWon?'var(--win)':'var(--loss)') });
+      payEl.textContent = allWon ? '+'+gFmt(slip.potPayout - slip.stake) : '-'+gFmt(slip.stake);
+      ap(resRow, payEl);
+      ap(card, resRow);
+    } else if (pend > 0 && past) {
+      var pendEl = mk('div', { style:'font-size:.67rem;color:var(--draw);margin-top:.35rem' });
+      pendEl.textContent = wins + '/' + slip.bets.length + ' richtig, ' + pend + ' noch offen';
+      ap(card, pendEl);
+    }
+
+    ap(cont, card);
+  });
+}
+
+
+
+// ════════════════════════════════════════════════════════
+// ADMIN FUNCTIONS
+// ════════════════════════════════════════════════════════
+
+function isAdmin() {
+  return GRP && G_ME && GRP.creator === G_ME;
+}
+
+function renderAdminPanel() {
+  var panel = el('gAdminPanel');
+  if (!panel) return;
+
+  if (!isAdmin()) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  // Settings
+  var cfg = GRP.settings || { startBalance: 1000, minStake: 5, maxStake: 0 };
+  if (el('aStartBal')) el('aStartBal').value = cfg.startBalance || 1000;
+  if (el('aMinStake')) el('aMinStake').value = cfg.minStake || 5;
+  if (el('aMaxStake')) el('aMaxStake').value = cfg.maxStake || 0;
+
+  // Invite link
+  var inviteCode = GRP.code;
+  var inviteText = G_FB_URL
+    ? 'Code: ' + inviteCode + ' | Firebase: ' + G_FB_URL
+    : 'Code: ' + inviteCode + ' (lokal – kein Remote-Link)';
+  if (el('aInviteLink')) el('aInviteLink').textContent = inviteText;
+  if (el('aInviteCode')) el('aInviteCode').textContent = inviteCode;
+
+  // Member list
+  renderAdminMemberList();
+
+  // Adjust balance dropdown
+  var sel = el('aAdjMember');
+  if (sel) {
+    sel.innerHTML = '';
+    Object.keys(GRP.members).forEach(function(name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function renderAdminMemberList() {
+  var list = el('aMemberList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  var members = Object.keys(GRP.members);
+  if (!members.length) {
+    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.72rem' }, 'Keine Mitglieder'));
+    return;
+  }
+
+  members.forEach(function(name) {
+    var m   = GRP.members[name] || {};
+    var row = mk('div', { cls: 'member-row' });
+
+    // Name + creator badge
+    var nameWrap = mk('div', { cls: 'member-name' });
+    nameWrap.textContent = name;
+    if (name === GRP.creator) {
+      var badge = mk('span', { cls: 'admin-badge', style: 'margin-left:.4rem' }, 'ADMIN');
+      ap(nameWrap, badge);
+    }
+    if (name === G_ME) {
+      var meBadge = mk('span', { style: 'margin-left:.3rem;font-size:.6rem;color:var(--tx3)' }, '(du)');
+      ap(nameWrap, meBadge);
+    }
+    ap(row, nameWrap);
+
+    // Balance
+    ap(row, mk('div', { cls: 'member-bal' }, gFmt(m.balance || 0)));
+
+    // Slip count this matchday
+    var slipsToday = (GRP.slips || []).filter(function(s) {
+      return s.member === name && s.matchday === ST.curMD;
+    }).length;
+    var slipBadge = mk('div', { style: 'font-size:.62rem;color:' + (slipsToday ? 'var(--win)' : 'var(--tx3)') });
+    slipBadge.textContent = slipsToday ? '✓ Schein' : '– kein Schein';
+    ap(row, slipBadge);
+
+    // Kick button (not for self, not for creator trying to kick himself)
+    if (name !== G_ME) {
+      var kickBtn = mk('button', { cls: 'admin-btn admin-btn-del' }, 'Kicken');
+      (function(memberName) {
+        kickBtn.addEventListener('click', function() { adminKick(memberName); });
+      })(name);
+      ap(row, kickBtn);
+    }
+
+    ap(list, row);
+  });
+}
+
+function adminCopyInvite() {
+  var text = G_FB_URL
+    ? 'KickAnalyse Pro – Tritt meiner Gruppe bei!\nCode: ' + GRP.code + '\nFirebase-URL: ' + G_FB_URL
+    : 'KickAnalyse Pro – Gruppencode: ' + GRP.code;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      var link = el('aInviteLink');
+      if (link) { var old = link.textContent; link.textContent = '✓ Kopiert!'; link.style.color = 'var(--win)'; setTimeout(function() { link.textContent = old; link.style.color = ''; }, 1800); }
+    });
+  } else {
+    alert(text);
+  }
+}
+
+function adminSaveSettings() {
+  if (!isAdmin()) return;
+  var startBal = parseFloat(el('aStartBal').value) || 1000;
+  var minStake = parseFloat(el('aMinStake').value) || 5;
+  var maxStake = parseFloat(el('aMaxStake').value) || 0;
+
+  if (startBal < 100) { alert('Startguthaben muss mindestens 100€ sein.'); return; }
+  if (minStake < 1)   { alert('Mindesteinsatz muss mindestens 1€ sein.'); return; }
+
+  GRP = loadGrp(GRP.code);
+  GRP.settings = { startBalance: startBal, minStake: minStake, maxStake: maxStake };
+  saveGrp(GRP);
+
+  var msg = el('aSettingsMsg');
+  if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
+}
+
+function adminKick(memberName) {
+  if (!isAdmin()) return;
+  if (memberName === GRP.creator) { alert('Der Gruppenersteller kann nicht gekickt werden.'); return; }
+  if (!confirm('Spieler "' + memberName + '" aus der Gruppe entfernen?\nSeine Scheine bleiben erhalten.')) return;
+
+  GRP = loadGrp(GRP.code);
+  delete GRP.members[memberName];
+  // Remove their pending slips
+  GRP.slips = (GRP.slips || []).filter(function(s) {
+    return !(s.member === memberName && s.result === 'pending');
+  });
+  saveGrp(GRP);
+  renderAdminPanel();
+  renderGLeaderboard();
+}
+
+function adminAdjBalance() {
+  if (!isAdmin()) return;
+  var member = el('aAdjMember') && el('aAdjMember').value;
+  var amount = parseFloat(el('aAdjAmount') && el('aAdjAmount').value) || 0;
+  if (!member || amount === 0) { alert('Bitte Spieler und Betrag auswählen.'); return; }
+
+  GRP = loadGrp(GRP.code);
+  if (!GRP.members[member]) { alert('Spieler nicht gefunden.'); return; }
+
+  var oldBal = GRP.members[member].balance || 0;
+  var newBal = Math.round((oldBal + amount) * 100) / 100;
+  if (newBal < 0) { alert('Guthaben kann nicht negativ werden. Maximum Abzug: ' + gFmt(oldBal)); return; }
+
+  GRP.members[member].balance = newBal;
+  if (!GRP.members[member].history) GRP.members[member].history = [];
+  GRP.members[member].history.push({
+    date: new Date().toLocaleDateString('de-DE'),
+    change: amount,
+    reason: 'Admin-Anpassung'
+  });
+  saveGrp(GRP);
+  if (el('aAdjAmount')) el('aAdjAmount').value = '';
+  renderAdminPanel();
+  renderGLeaderboard();
+  alert('Guthaben von "' + member + '" ' + (amount > 0 ? 'erhöht' : 'reduziert') + ' auf ' + gFmt(newBal));
+}
+
+function adminResetSeason() {
+  if (!isAdmin()) return;
+  if (!confirm('Neue Saison starten?\n\n• Alle Guthaben werden auf das Startguthaben zurückgesetzt\n• Alle Scheine werden archiviert\n• Die Rangliste startet neu\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) return;
+
+  GRP = loadGrp(GRP.code);
+  var cfg = GRP.settings || {};
+  var startBal = cfg.startBalance || START_BAL;
+
+  // Archive slips
+  if (!GRP.archivedSlips) GRP.archivedSlips = [];
+  GRP.archivedSlips = GRP.archivedSlips.concat(GRP.slips || []);
+  GRP.slips = [];
+
+  // Reset all balances
+  Object.keys(GRP.members).forEach(function(name) {
+    GRP.members[name].balance = startBal;
+    GRP.members[name].history = [{ date: new Date().toLocaleDateString('de-DE'), change: 0, reason: 'Neue Saison gestartet' }];
+  });
+
+  GRP.seasonStarted = new Date().toISOString();
+  saveGrp(GRP);
+  refreshGroup();
+  alert('Neue Saison gestartet! Alle Spieler starten mit ' + gFmt(startBal) + '.');
+}
+
+function adminDeleteGroup() {
+  if (!isAdmin()) return;
+  var gname = GRP.name;
+  if (!confirm('Gruppe "' + gname + '" wirklich permanent löschen?\n\nAlle Daten (Mitglieder, Scheine, Guthaben) gehen verloren.\nDiese Aktion kann NICHT rückgängig gemacht werden!')) return;
+  if (!confirm('Letzte Bestätigung: Gruppe "' + gname + '" endgültig löschen?')) return;
+
+  // Delete from Firebase
+  if (G_FB_URL) {
+    fetch(G_FB_URL.replace(/\/$/, '') + '/groups/' + GRP.code + '.json', {
+      method: 'DELETE', mode: 'cors'
+    }).catch(function() {});
+  }
+
+  // Delete local
+  try { localStorage.removeItem(grpKey(GRP.code)); } catch(_) {}
+  localStorage.removeItem('kap_g2_my_grp');
+  localStorage.removeItem('kap_g2_my_name');
+
+  GRP = null; G_ME = null; G_SLIP = [];
+  stopCountdownTimer();
+  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+  el('groupSetup').style.display = 'block';
+  el('groupMain').style.display  = 'none';
+  alert('Gruppe "' + gname + '" wurde gelöscht.');
+}
+
+
+// ── Scheine Export / Import / Auto-Settle ────────────────────────────────────
+
+function exportSlips() {
+  var slips = getSlips();
+  if (!slips.length) { alert('Keine Scheine zum Exportieren.'); return; }
+  var json = JSON.stringify(slips, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'kickanalyse_scheine_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importSlips(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('Ungültiges Format');
+      var current = getSlips();
+      // Merge: importierte Scheine die noch nicht vorhanden sind hinzufügen
+      var existingIds = current.map(function(s) { return s.id; });
+      var newOnes = imported.filter(function(s) { return existingIds.indexOf(s.id) < 0; });
+      var merged = current.concat(newOnes);
+      saveSlips(merged);
+      renderSubmittedSlips();
+      alert(newOnes.length + ' neue Scheine importiert, ' + (imported.length - newOnes.length) + ' bereits vorhanden.');
+    } catch(err) {
+      alert('Import fehlgeschlagen: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// Auto-Settle: lädt alle Spielergebnisse von OpenLigaDB und wertet
+// offene Wetten automatisch aus
+function autoSettleAll() {
+  var slips   = getSlips();
+  var pending = [];
+  slips.forEach(function(slip) {
+    slip.bets.forEach(function(bet) {
+      if (bet.outcome === 'pending') pending.push({ slip: slip, bet: bet });
+    });
+  });
+  if (!pending.length) {
+    showSettleStatus('Keine offenen Wetten gefunden.', 'var(--tx2)');
+    return;
+  }
+
+  showSettleStatus('Lade Spielergebnisse von OpenLigaDB…', 'var(--draw)');
+
+  // Lade alle Spieltage der aktuellen Saison
+  var season = ST.curSeason || (function() {
+    var d = new Date(), m = d.getMonth() + 1, y = d.getFullYear();
+    return m >= 7 ? y : y - 1;
+  })();
+
+  apiFetch('/getmatchdata/bl1/' + season).then(function(allMatches) {
+    var finished = allMatches.filter(function(m) { return m.matchIsFinished; });
+    var resultMap = {};
+    finished.forEach(function(m) {
+      var r = null;
+      if (m.matchResults) {
+        for (var i = 0; i < m.matchResults.length; i++) {
+          if (m.matchResults[i].resultTypeID === 2) { r = m.matchResults[i]; break; }
+        }
+        if (!r && m.matchResults.length) r = m.matchResults[0];
+      }
+      if (r) resultMap[m.matchID] = { g1: r.pointsTeam1, g2: r.pointsTeam2, finished: true };
+    });
+
+    var settled = 0, notFound = 0;
+    slips = getSlips();
+
+    slips = slips.map(function(slip) {
+      slip.bets = slip.bets.map(function(bet) {
+        if (bet.outcome !== 'pending') return bet;
+        var res = resultMap[bet.matchID];
+        if (!res) { notFound++; return bet; }
+        var outcome = evaluateTip(bet.tipId, res.g1, res.g2);
+        if (outcome !== null) { bet.outcome = outcome; settled++; }
+        return bet;
+      });
+      return slip;
+    });
+
+    saveSlips(slips);
+    renderSubmittedSlips();
+    showSettleStatus(
+      settled + ' Wette(n) automatisch ausgewertet' +
+      (notFound > 0 ? ', ' + notFound + ' Spiel(e) noch nicht beendet.' : '.'),
+      settled > 0 ? 'var(--win)' : 'var(--tx2)'
+    );
+  }).catch(function(e) {
+    showSettleStatus('Fehler beim Laden: ' + e.message, 'var(--loss)');
+  });
+}
+
+function evaluateTip(tipId, g1, g2) {
+  // Gibt 'win' oder 'loss' zurück, null wenn unklar
+  if (tipId === 'home')  return g1 > g2  ? 'win' : 'loss';
+  if (tipId === 'draw')  return g1 === g2 ? 'win' : 'loss';
+  if (tipId === 'away')  return g1 < g2  ? 'win' : 'loss';
+  if (tipId === '1x')    return g1 >= g2 ? 'win' : 'loss';
+  if (tipId === 'x2')    return g2 >= g1 ? 'win' : 'loss';
+  if (tipId === '12')    return g1 !== g2 ? 'win' : 'loss';
+  var tot = g1 + g2;
+  if (tipId === 'o25')   return tot > 2.5  ? 'win' : 'loss';
+  if (tipId === 'u25')   return tot < 2.5  ? 'win' : 'loss';
+  if (tipId === 'o35')   return tot > 3.5  ? 'win' : 'loss';
+  if (tipId === 'u35')   return tot < 3.5  ? 'win' : 'loss';
+  if (tipId === 'btts')  return (g1 > 0 && g2 > 0) ? 'win' : 'loss';
+  if (tipId === 'nbtts') return (g1 === 0 || g2 === 0) ? 'win' : 'loss';
+  return null;
+}
+
+function showSettleStatus(msg, color) {
+  var box = el('autoSettleStatus');
+  if (!box) return;
+  box.style.display = 'block';
+  box.textContent   = msg;
+  box.style.color   = color || 'var(--tx2)';
+}
+
+// ── Bootstrap ────────────────────────────────────────────────────────────────
+// Beim Start: Scheine aus IndexedDB wiederherstellen (falls localStorage leer)
+loadSlipsFromIDB(function(recovered) {
+  // recovered enthält die meisten Scheine aus allen Quellen
+  if (recovered.length) saveSlips(recovered);
+});
+
+loadBL().then(function() {
+  renderMatches();
+  loadTable();
+  loadSeasonForm().then(function() {
+    // Re-render detail panel if a match is selected
+    if (ST.sel) {
+      var pr = calcProbs(ST.sel.matchID || 0,
+        ST.sel.team1 ? ST.sel.team1.teamName : '',
+        ST.sel.team2 ? ST.sel.team2.teamName : '');
+      selectMatch(ST.sel, pr);
+    }
+  });
+}).catch(function(e) {
+  console.warn('Ladefehler:', e.message);
+  showNotice('OpenLigaDB nicht erreichbar – ' + e.message);
+  if (typeof location !== 'undefined' && location.protocol === 'file:') {
+    setTimeout(function() { if (!ST.matches.length) doReload(); }, 3500);
+  }
+});
+</script>
+</body>
+</html>
