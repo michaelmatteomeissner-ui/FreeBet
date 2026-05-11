@@ -317,136 +317,193 @@ nav button.active{background:var(--bg4);color:var(--ac)}
   .layout{grid-template-columns:1fr}
   .dp{position:static;max-height:none}
   .chat{grid-column:1}
+  /* Group right column stacks below */
+  #groupMain .layout > div:last-child{position:static}
 }
 /* ── MOBILE OPTIMIERUNG ── */
 @media(max-width:600px){
-  /* Header */
-  .hdr{height:50px;padding:0 .85rem;gap:.5rem}
-  .logo-txt{font-size:1.05rem;letter-spacing:1px}
+  /* ── BASE ── */
+  *{-webkit-tap-highlight-color:transparent}
+  .page{padding:.6rem .6rem}
+
+  /* ── HEADER ── */
+  .hdr{height:48px;padding:0 .75rem;gap:.5rem}
   .logo-ball{width:26px;height:26px}
-  .ref-btn{font-size:.66rem;padding:.22rem .45rem}
+  .logo-txt{font-size:1rem;letter-spacing:1px}
+  .live-dot{display:none}
+  .ref-btn{font-size:.65rem;padding:.22rem .5rem;gap:3px}
 
-  /* Page */
-  .page{padding:.75rem .75rem}
+  /* ── STATS 2x2 ── */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.75rem}
+  .sc{padding:.5rem .65rem;border-radius:7px;min-width:0}
+  .sc-val{font-size:1.3rem}
+  .sc-lbl{font-size:.6rem;margin-top:1px}
+  .sc-sub{font-size:.57rem}
 
-  /* Stats bar – 2 per row */
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.85rem}
-  .sc{min-width:0;padding:.5rem .65rem}
-  .sc-val{font-size:1.25rem}
-  .sc-lbl{font-size:.58rem}
-  .sc-sub{font-size:.56rem}
+  /* ── NAV 2x2 ── */
+  nav{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:.75rem}
+  nav button{font-size:.7rem;padding:.35rem .3rem;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* Nav – 2x2 Grid */
-  nav{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:.85rem}
-  nav button{font-size:.7rem;padding:.32rem .45rem;border-radius:6px;text-align:center}
-
-  /* Section header */
-  .sec h2{font-size:.78rem;letter-spacing:1.5px}
+  /* ── SECTION HEADER ── */
+  .sec{margin-bottom:.6rem}
+  .sec h2{font-size:.75rem;letter-spacing:1.5px}
   .badge{font-size:.6rem;padding:1px 5px}
 
-  /* MATCH CARDS – key fix: prevent overflow */
-  .mcard{margin-bottom:.45rem;border-radius:8px}
-  .mc-top{padding:.65rem .75rem;gap:.3rem;flex-wrap:nowrap}
-  .tside{flex:1;min-width:0;gap:.3rem}
-  .crest{width:26px;height:26px;flex-shrink:0}
-  .tn{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mc-mid{min-width:48px;max-width:60px;flex-shrink:0}
-  .mc-time{font-size:.58rem}
-  .mc-vs{font-size:.85rem}
-  .mc-score{font-size:1.05rem}
-  .mc-date{font-size:.54rem}
-  .mc-bot{padding:.38rem .75rem .6rem}
-  .ptrack{height:4px;margin-bottom:.28rem}
-  .pll{font-size:.58rem}
-  .mtags{gap:.25rem}
-  .tag{font-size:.54rem;padding:1px 4px}
+  /* ── MATCH CARDS ── */
+  .mcard{margin-bottom:.4rem;border-radius:8px;overflow:hidden}
 
-  /* Detail panel – full width on mobile */
-  .dp{padding:.75rem;border-radius:8px}
-  .dp-mhdr{padding-bottom:.65rem;margin-bottom:.65rem}
-  .dp-crest{width:36px;height:36px}
-  .dp-tname{font-size:.6rem;max-width:70px}
-  .dp-vs{font-size:1.15rem}
-  .dp-sec{font-size:.58rem;margin:.65rem 0 .3rem}
+  /* Top row: home | mid | away – NO wrapping, both teams visible */
+  .mc-top{
+    display:grid;
+    grid-template-columns:1fr 52px 1fr;
+    align-items:center;
+    padding:.6rem .65rem;
+    gap:.25rem
+  }
+  .tside{
+    display:flex;
+    align-items:center;
+    gap:.3rem;
+    min-width:0;
+    overflow:hidden
+  }
+  .tside.r{flex-direction:row-reverse}
+  .crest,.crest-mix{width:24px;height:24px;flex-shrink:0}
+  .crest-fb{width:24px;height:24px;font-size:.45rem;flex-shrink:0}
+  .tn{
+    font-size:.68rem;
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    min-width:0;
+    flex:1
+  }
+  .tside.r .tn{text-align:right}
+
+  /* Mid column */
+  .mc-mid{
+    text-align:center;
+    flex-shrink:0;
+    min-width:0
+  }
+  .mc-time{font-size:.56rem;white-space:nowrap}
+  .mc-vs{font-size:.85rem;letter-spacing:1px}
+  .mc-score{font-size:1rem;letter-spacing:1px}
+  .mc-date{font-size:.52rem;white-space:nowrap}
+
+  /* Bottom row */
+  .mc-bot{padding:.35rem .65rem .55rem}
+  .ptrack{height:4px;gap:1px;margin-bottom:.25rem}
+  .plrow{display:flex;justify-content:space-between}
+  .pll{font-size:.57rem}
+  .mtags{gap:.22rem;margin-top:.3rem;flex-wrap:wrap}
+  .tag{font-size:.53rem;padding:1px 4px;border-radius:3px}
+
+  /* ── DETAIL PANEL ── */
+  .dp{padding:.7rem;border-radius:8px}
+  .dp-mhdr{padding-bottom:.6rem;margin-bottom:.6rem}
+  .dp-team{max-width:68px}
+  .dp-crest,.dp-crest-mix{width:34px;height:34px}
+  .dp-tname{font-size:.6rem}
+  .dp-vs{font-size:1.1rem}
+  .dp-sec{font-size:.58rem;margin:.6rem 0 .28rem;letter-spacing:1px}
+  .srow{gap:.35rem;margin-bottom:.35rem}
   .slbl{font-size:.62rem}
-  .sval{font-size:.62rem}
+  .strk{height:4px}
+  .sval{font-size:.62rem;min-width:2rem}
   .fbadges{gap:2px}
-  .fb{width:17px;height:17px;font-size:.54rem}
-  .h2h-row{padding:.28rem 0}
-  .verdict{padding:.6rem .75rem;margin-top:.65rem}
-  .verd-lbl{font-size:.56rem}
-  .verd-txt{font-size:.72rem}
-  .btn-ac{padding:.48rem;font-size:.72rem}
+  .fb{width:17px;height:17px;font-size:.53rem;border-radius:2px}
+  .h2h-row{padding:.28rem 0;gap:.38rem}
+  .verdict{margin-top:.6rem;padding:.6rem .7rem}
+  .verd-lbl{font-size:.57rem}
+  .verd-txt{font-size:.7rem}
+  .btn-ac{padding:.48rem;font-size:.72rem;margin-top:.65rem;border-radius:6px}
 
-  /* Slip tracker */
-  .slip-match-row{padding:.55rem .7rem;border-radius:7px}
-  .smr-teams{font-size:.74rem}
-  .smr-date{font-size:.57rem}
-  .smr-tips{gap:.28rem}
-  .tip-btn{font-size:.61rem;padding:.22rem .44rem;border-radius:4px}
-  .slip-panel{padding:.8rem;border-radius:8px}
-  .slip-header{font-size:.82rem;margin-bottom:.55rem}
-  .slip-teams{font-size:.72rem}
-  .slip-tip-lbl{font-size:.6rem}
-  .slip-item-odds{font-size:.82rem}
-  .slip-prob{padding:.6rem}
-  .slip-prob-val{font-size:1.65rem}
-  .slip-prob-lbl{font-size:.58rem}
-  .slip-submit{padding:.52rem;font-size:.76rem}
-
-  /* Timer */
-  .deadline-timer{padding:.6rem .75rem;gap:.5rem;border-radius:8px}
-  .timer-num{font-size:1.4rem;min-width:1.65rem}
-  .timer-unit{font-size:.48rem}
-  .timer-sep{font-size:1.2rem}
-  .timer-deadline{font-size:.58rem}
-  .timer-label{font-size:.58rem;letter-spacing:.6px}
-
-  /* Table */
-  .bl-tbl{font-size:.68rem}
-  .bl-tbl th{padding:.35rem .4rem;font-size:.58rem}
-  .bl-tbl td{padding:.5rem .4rem}
+  /* ── TABLE ── */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .bl-tbl{font-size:.66rem;min-width:420px}
+  .bl-tbl th{padding:.32rem .38rem;font-size:.57rem}
+  .bl-tbl td{padding:.46rem .38rem}
+  .tcell{gap:.3rem}
   .tc{width:14px;height:14px}
-  .pts{font-size:.8rem}
-  .fm{width:10px;height:10px;font-size:.4rem}
-  .tcell{gap:.35rem}
+  .pts{font-size:.78rem}
+  .fmini{gap:2px}
+  .fm{width:10px;height:10px;font-size:.4rem;border-radius:1px}
+  .rk{width:18px;font-size:.66rem}
 
-  /* Group */
-  .lb-row{padding:.42rem 0;gap:.45rem}
-  .lb-rank{font-size:.85rem;width:16px}
+  /* ── SLIP / TRACKER ── */
+  .slip-match-row{padding:.5rem .65rem;border-radius:7px;margin-bottom:.38rem}
+  .smr-top{margin-bottom:.4rem}
+  .smr-teams{font-size:.72rem}
+  .smr-date{font-size:.57rem}
+  .smr-tips{gap:.24rem}
+  .tip-btn{font-size:.6rem;padding:.2rem .42rem;border-radius:4px}
+  .slip-panel{padding:.75rem;border-radius:8px;top:56px}
+  .slip-header{font-size:.8rem;margin-bottom:.5rem}
+  .slip-item{padding:.35rem 0}
+  .slip-teams{font-size:.7rem}
+  .slip-tip-lbl{font-size:.59rem}
+  .slip-item-odds{font-size:.8rem}
+  .slip-prob{padding:.55rem;border-radius:6px}
+  .slip-prob-val{font-size:1.55rem}
+  .slip-prob-lbl{font-size:.57rem}
+  .slip-submit{padding:.5rem;font-size:.74rem;border-radius:6px;margin-top:.5rem}
+
+  /* ── TIMER ── */
+  .deadline-timer{padding:.55rem .7rem;gap:.45rem;border-radius:8px;margin-bottom:.65rem}
+  .timer-icon{font-size:1.1rem}
+  .timer-label{font-size:.57rem;letter-spacing:.5px;margin-bottom:.2rem}
+  .timer-digits{gap:.25rem}
+  .timer-block{}
+  .timer-num{font-size:1.3rem;min-width:1.55rem}
+  .timer-unit{font-size:.46rem}
+  .timer-sep{font-size:1.1rem;line-height:1.2;padding-bottom:.05rem}
+  .timer-deadline{font-size:.57rem;margin-top:.22rem}
+
+  /* ── GROUP ── */
+  .g-match{padding:.55rem .65rem;border-radius:7px;margin-bottom:.38rem}
+  .g-match-teams{font-size:.74rem;margin-bottom:.2rem}
+  .g-match-meta{flex-wrap:wrap;gap:.3rem}
+  .g-match-date{font-size:.6rem}
+  .g-odds-row{gap:.2rem;flex-wrap:wrap}
+  .g-odd{font-size:.59rem;padding:.15rem .36rem;border-radius:3px}
+  .lb-row{padding:.38rem 0;gap:.4rem}
+  .lb-rank{font-size:.82rem;width:16px}
   .lb-name{font-size:.7rem}
-  .lb-balance{font-size:.8rem}
-  .lb-diff{font-size:.56rem}
-  .g-bet-card{padding:.48rem .6rem;font-size:.68rem;border-radius:6px}
-  .g-match{padding:.6rem .7rem;border-radius:7px;margin-bottom:.42rem}
-  .g-match-teams{font-size:.76rem;margin-bottom:.22rem}
-  .g-odds-row{gap:.22rem}
-  .g-odd{font-size:.6rem;padding:.16rem .38rem}
-  .member-row{padding:.35rem 0;gap:.42rem}
-  .member-name{font-size:.74rem}
-  .member-bal{font-size:.68rem}
-
-  /* Admin panel */
-  .admin-panel{padding:.7rem}
-  .admin-title{font-size:.8rem}
-  .admin-sec-title{font-size:.6rem}
-  .admin-row{flex-wrap:wrap;gap:.38rem}
-  .admin-input{width:100%;box-sizing:border-box}
-  .admin-btn{font-size:.68rem;padding:.26rem .58rem}
-  .invite-link-box{font-size:.64rem;padding:.38rem .6rem}
+  .lb-balance{font-size:.78rem}
+  .lb-diff{font-size:.55rem}
+  .g-bet-card{padding:.45rem .58rem;border-radius:6px;margin-bottom:.35rem;font-size:.67rem}
+  .g-bet-top{margin-bottom:.15rem}
+  .g-bet-meta{font-size:.62rem}
 
   /* Sub-slip */
-  .sub-slip{padding:.65rem .75rem;border-radius:8px}
-  .sub-slip-hdr{margin-bottom:.5rem}
-  .sub-bet-row{padding:.3rem 0;gap:.38rem}
-  .sub-bet-teams{font-size:.68rem}
-  .sub-bet-tip{font-size:.58rem}
-  .slip-result-bar{gap:.28rem;margin-top:.42rem}
-  .sr-stat{padding:.25rem .45rem;border-radius:4px}
-  .sr-val{font-size:.85rem}
+  .sub-slip{padding:.6rem .7rem;border-radius:7px;margin-bottom:.5rem}
+  .sub-slip-hdr{margin-bottom:.45rem}
+  .sub-bet-row{padding:.28rem 0;gap:.32rem;font-size:.7rem}
+  .sub-bet-teams{font-size:.67rem}
+  .sub-bet-tip{font-size:.57rem}
+  .out-dot{width:6px;height:6px}
+  .slip-result-bar{gap:.25rem;margin-top:.4rem}
+  .sr-stat{padding:.22rem .4rem;border-radius:4px}
+  .sr-val{font-size:.82rem}
 
-  /* Notice box */
-  .notice{font-size:.72rem;padding:.65rem .75rem;border-radius:7px}
+  /* ── ADMIN ── */
+  .admin-panel{padding:.65rem}
+  .admin-title{font-size:.78rem;margin-bottom:.6rem}
+  .admin-sec-title{font-size:.59rem;margin-bottom:.4rem}
+  .admin-section{margin-bottom:.7rem;padding-bottom:.7rem}
+  .admin-row{flex-wrap:wrap;gap:.35rem}
+  .admin-label{font-size:.7rem;min-width:100px}
+  .admin-input{width:80px;font-size:.72rem;padding:.32rem .55rem}
+  .admin-btn{font-size:.67rem;padding:.24rem .55rem}
+  .invite-link-box{font-size:.62rem;padding:.35rem .55rem}
+  .member-row{padding:.32rem 0;gap:.38rem}
+  .member-name{font-size:.72rem}
+  .member-bal{font-size:.67rem}
+
+  /* ── NOTICE ── */
+  .notice{font-size:.7rem;padding:.6rem .7rem;border-radius:7px;line-height:1.5}
 }
 </style>
 </head>
@@ -929,7 +986,7 @@ var CR = {
   'FC Augsburg':              'https://upload.wikimedia.org/wikipedia/de/thumb/b/b5/FC_Augsburg_logo.svg/120px-FC_Augsburg_logo.svg.png',
   'VfL Wolfsburg':            'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Logo-VfL-Wolfsburg.svg/120px-Logo-VfL-Wolfsburg.svg.png',
   'SV Werder Bremen':         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/SV-Werder-Bremen-Logo.svg/120px-SV-Werder-Bremen-Logo.svg.png',
-  '1. FC Union Berlin':       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/1._FC_Union_Berlin_Logo.svg/1280px-1._FC_Union_Berlin_Logo.svg.png',
+  '1. FC Union Berlin':       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/1._FC_Union_Berlin_Logo.svg/240px-1._FC_Union_Berlin_Logo.svg.png',
   '1. FC Heidenheim 1846':    'https://upload.wikimedia.org/wikipedia/de/thumb/5/5d/1._FC_Heidenheim_1846.svg/120px-1._FC_Heidenheim_1846.svg.png',
   'Holstein Kiel':            'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Holstein_Kiel_logo.svg/120px-Holstein_Kiel_logo.svg.png',
   'FC St. Pauli 1910':        'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_St._Pauli_Logo.svg/120px-FC_St._Pauli_Logo.svg.png',
