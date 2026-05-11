@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KickAnalyse Pro – Bundesliga</title>
+<title>FreeBet – Bundesliga</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#08090d;--bg2:#0f1117;--bg3:#161920;--bg4:#1c2028;--bo:rgba(255,255,255,.07);--bo2:rgba(255,255,255,.13);--ac:#e8ff47;--blue:#47c8ff;--tx:#eef0f5;--tx2:#8892a4;--tx3:#4a5468;--win:#3ddc84;--draw:#ffb347;--loss:#ff5a5a}
@@ -91,6 +91,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 .dp-mhdr{display:flex;justify-content:space-between;align-items:center;padding-bottom:.8rem;margin-bottom:.8rem;border-bottom:1px solid var(--bo)}
 .dp-team{display:flex;flex-direction:column;align-items:center;gap:.35rem;max-width:82px}
 .dp-crest{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
+.dp-crest-mix{width:46px;height:46px;object-fit:contain;mix-blend-mode:multiply;filter:brightness(0.95) contrast(1.1)}
 .dp-tname{font-size:.68rem;font-weight:600;text-align:center;line-height:1.22}
 .dp-vs{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--tx3)}
 .dp-sec{font-size:.62rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);font-weight:600;margin:.85rem 0 .38rem}
@@ -321,87 +322,131 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 @media(max-width:600px){
   /* Header */
   .hdr{height:50px;padding:0 .85rem;gap:.5rem}
-  .logo-txt{font-size:1.1rem;letter-spacing:1px}
+  .logo-txt{font-size:1.05rem;letter-spacing:1px}
   .logo-ball{width:26px;height:26px}
-  .ref-btn{font-size:.68rem;padding:.25rem .5rem}
+  .ref-btn{font-size:.66rem;padding:.22rem .45rem}
 
   /* Page */
-  .page{padding:.85rem .85rem}
+  .page{padding:.75rem .75rem}
 
   /* Stats bar – 2 per row */
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-  .sc{min-width:0;padding:.55rem .7rem}
-  .sc-val{font-size:1.35rem}
-  .sc-lbl{font-size:.6rem}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.85rem}
+  .sc{min-width:0;padding:.5rem .65rem}
+  .sc-val{font-size:1.25rem}
+  .sc-lbl{font-size:.58rem}
+  .sc-sub{font-size:.56rem}
 
-  /* Nav */
-  nav{display:grid;grid-template-columns:1fr 1fr;gap:2px}
-  nav button{font-size:.72rem;padding:.35rem .5rem;border-radius:6px}
+  /* Nav – 2x2 Grid */
+  nav{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:.85rem}
+  nav button{font-size:.7rem;padding:.32rem .45rem;border-radius:6px;text-align:center}
 
-  /* Match cards */
-  .mc-top{padding:.75rem .85rem;gap:.45rem}
-  .crest{width:30px;height:30px}
-  .tn{font-size:.76rem}
-  .mc-mid{min-width:52px}
-  .mc-vs{font-size:.95rem}
-  .mc-score{font-size:1.15rem}
-  .mc-date{font-size:.56rem}
-  .mc-bot{padding:.42rem .85rem .65rem}
-  .tag{font-size:.56rem;padding:1px 5px}
+  /* Section header */
+  .sec h2{font-size:.78rem;letter-spacing:1.5px}
+  .badge{font-size:.6rem;padding:1px 5px}
 
-  /* Detail panel */
-  .dp{padding:.85rem}
-  .dp-crest{width:38px;height:38px}
-  .dp-tname{font-size:.62rem}
+  /* MATCH CARDS – key fix: prevent overflow */
+  .mcard{margin-bottom:.45rem;border-radius:8px}
+  .mc-top{padding:.65rem .75rem;gap:.3rem;flex-wrap:nowrap}
+  .tside{flex:1;min-width:0;gap:.3rem}
+  .crest{width:26px;height:26px;flex-shrink:0}
+  .tn{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mc-mid{min-width:48px;max-width:60px;flex-shrink:0}
+  .mc-time{font-size:.58rem}
+  .mc-vs{font-size:.85rem}
+  .mc-score{font-size:1.05rem}
+  .mc-date{font-size:.54rem}
+  .mc-bot{padding:.38rem .75rem .6rem}
+  .ptrack{height:4px;margin-bottom:.28rem}
+  .pll{font-size:.58rem}
+  .mtags{gap:.25rem}
+  .tag{font-size:.54rem;padding:1px 4px}
 
-  /* Slip */
-  .slip-match-row{padding:.6rem .75rem}
-  .smr-teams{font-size:.76rem}
-  .smr-date{font-size:.59rem}
-  .tip-btn{font-size:.63rem;padding:.24rem .48rem}
-  .slip-panel{padding:.85rem}
-  .slip-prob-val{font-size:1.8rem}
-  .slip-prob-lbl{font-size:.6rem}
+  /* Detail panel – full width on mobile */
+  .dp{padding:.75rem;border-radius:8px}
+  .dp-mhdr{padding-bottom:.65rem;margin-bottom:.65rem}
+  .dp-crest{width:36px;height:36px}
+  .dp-tname{font-size:.6rem;max-width:70px}
+  .dp-vs{font-size:1.15rem}
+  .dp-sec{font-size:.58rem;margin:.65rem 0 .3rem}
+  .slbl{font-size:.62rem}
+  .sval{font-size:.62rem}
+  .fbadges{gap:2px}
+  .fb{width:17px;height:17px;font-size:.54rem}
+  .h2h-row{padding:.28rem 0}
+  .verdict{padding:.6rem .75rem;margin-top:.65rem}
+  .verd-lbl{font-size:.56rem}
+  .verd-txt{font-size:.72rem}
+  .btn-ac{padding:.48rem;font-size:.72rem}
 
-  /* Timer */
-  .deadline-timer{padding:.65rem .8rem;gap:.55rem}
-  .timer-num{font-size:1.5rem;min-width:1.8rem}
-  .timer-unit{font-size:.5rem}
-  .timer-sep{font-size:1.3rem}
-  .timer-deadline{font-size:.6rem}
-
-  /* Table */
-  .bl-tbl th,.bl-tbl td{padding:.38rem .45rem;font-size:.7rem}
-  .tc{width:15px;height:15px}
-  .pts{font-size:.82rem}
-
-  /* Group */
-  .lb-rank{font-size:.9rem;width:18px}
-  .lb-name{font-size:.72rem}
-  .lb-balance{font-size:.85rem}
-  .lb-diff{font-size:.58rem}
-  .g-bet-card{padding:.5rem .65rem;font-size:.7rem}
-  .g-match{padding:.65rem .75rem}
-  .g-match-teams{font-size:.78rem}
-  .g-odd{font-size:.62rem;padding:.18rem .42rem}
-
-  /* Admin */
-  .admin-panel{padding:.75rem}
-  .admin-row{flex-direction:column;align-items:flex-start}
-  .admin-input{width:100%}
-
-  /* Sub-slip */
-  .sub-slip{padding:.7rem .8rem}
-  .sub-bet-teams{font-size:.7rem}
-  .sub-bet-tip{font-size:.6rem}
-  .slip-result-bar{gap:.3rem}
-  .sr-val{font-size:.9rem}
-
-  /* Schein items */
-  .slip-item{padding:.38rem 0}
+  /* Slip tracker */
+  .slip-match-row{padding:.55rem .7rem;border-radius:7px}
+  .smr-teams{font-size:.74rem}
+  .smr-date{font-size:.57rem}
+  .smr-tips{gap:.28rem}
+  .tip-btn{font-size:.61rem;padding:.22rem .44rem;border-radius:4px}
+  .slip-panel{padding:.8rem;border-radius:8px}
+  .slip-header{font-size:.82rem;margin-bottom:.55rem}
   .slip-teams{font-size:.72rem}
   .slip-tip-lbl{font-size:.6rem}
   .slip-item-odds{font-size:.82rem}
+  .slip-prob{padding:.6rem}
+  .slip-prob-val{font-size:1.65rem}
+  .slip-prob-lbl{font-size:.58rem}
+  .slip-submit{padding:.52rem;font-size:.76rem}
+
+  /* Timer */
+  .deadline-timer{padding:.6rem .75rem;gap:.5rem;border-radius:8px}
+  .timer-num{font-size:1.4rem;min-width:1.65rem}
+  .timer-unit{font-size:.48rem}
+  .timer-sep{font-size:1.2rem}
+  .timer-deadline{font-size:.58rem}
+  .timer-label{font-size:.58rem;letter-spacing:.6px}
+
+  /* Table */
+  .bl-tbl{font-size:.68rem}
+  .bl-tbl th{padding:.35rem .4rem;font-size:.58rem}
+  .bl-tbl td{padding:.5rem .4rem}
+  .tc{width:14px;height:14px}
+  .pts{font-size:.8rem}
+  .fm{width:10px;height:10px;font-size:.4rem}
+  .tcell{gap:.35rem}
+
+  /* Group */
+  .lb-row{padding:.42rem 0;gap:.45rem}
+  .lb-rank{font-size:.85rem;width:16px}
+  .lb-name{font-size:.7rem}
+  .lb-balance{font-size:.8rem}
+  .lb-diff{font-size:.56rem}
+  .g-bet-card{padding:.48rem .6rem;font-size:.68rem;border-radius:6px}
+  .g-match{padding:.6rem .7rem;border-radius:7px;margin-bottom:.42rem}
+  .g-match-teams{font-size:.76rem;margin-bottom:.22rem}
+  .g-odds-row{gap:.22rem}
+  .g-odd{font-size:.6rem;padding:.16rem .38rem}
+  .member-row{padding:.35rem 0;gap:.42rem}
+  .member-name{font-size:.74rem}
+  .member-bal{font-size:.68rem}
+
+  /* Admin panel */
+  .admin-panel{padding:.7rem}
+  .admin-title{font-size:.8rem}
+  .admin-sec-title{font-size:.6rem}
+  .admin-row{flex-wrap:wrap;gap:.38rem}
+  .admin-input{width:100%;box-sizing:border-box}
+  .admin-btn{font-size:.68rem;padding:.26rem .58rem}
+  .invite-link-box{font-size:.64rem;padding:.38rem .6rem}
+
+  /* Sub-slip */
+  .sub-slip{padding:.65rem .75rem;border-radius:8px}
+  .sub-slip-hdr{margin-bottom:.5rem}
+  .sub-bet-row{padding:.3rem 0;gap:.38rem}
+  .sub-bet-teams{font-size:.68rem}
+  .sub-bet-tip{font-size:.58rem}
+  .slip-result-bar{gap:.28rem;margin-top:.42rem}
+  .sr-stat{padding:.25rem .45rem;border-radius:4px}
+  .sr-val{font-size:.85rem}
+
+  /* Notice box */
+  .notice{font-size:.72rem;padding:.65rem .75rem;border-radius:7px}
 }
 </style>
 </head>
@@ -417,7 +462,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
           <path d="M2 12h20"/>
         </svg>
       </div>
-      <span class="logo-txt">Kick<em>Analyse</em> Pro</span>
+      <span class="logo-txt">Free<em>Bet</em></span>
     </div>
     <div class="hdr-right">
       <span class="live-dot">LIVE-DATEN</span>
@@ -436,7 +481,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 
   <div class="stats">
     <div class="sc"><div class="sc-val" style="color:var(--win)" id="stMd">–</div><div class="sc-lbl">Spieltag</div><div class="sc-sub" id="stSeason">Lädt…</div></div>
-    <div class="sc"><div class="sc-val" id="stTotal">–</div><div class="sc-lbl">Spiele geladen</div><div class="sc-sub" style="color:var(--tx3)">Aktuell + Nächster</div></div>
+    <div class="sc"><div class="sc-val" id="stTotal">–</div><div class="sc-lbl">Spiele geladen</div><div class="sc-sub" style="color:var(--tx3)">Aktueller Spieltag</div></div>
     <div class="sc"><div class="sc-val" style="color:var(--ac)">87%</div><div class="sc-lbl">KI-Trefferquote</div><div class="sc-sub" style="color:var(--win)" id="stLbl">▲ Saison –</div></div>
     <div class="sc"><div class="sc-val" style="color:var(--blue)">5J.</div><div class="sc-lbl">Historische Daten</div><div class="sc-sub" style="color:var(--tx3)">xG · H2H · Form</div></div>
   </div>
@@ -664,6 +709,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
             <div style="font-size:.65rem;color:var(--tx3)">Angemeldet als</div>
             <div style="font-size:.78rem;font-weight:600" id="gMyNameDisplay">–</div>
           </div>
+          <button id="gAdminToggleBtn" onclick="toggleAdminPanel()" style="display:none;background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.25);color:var(--ac);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">⚙️ Admin</button>
           <button onclick="leaveGroup()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Verlassen</button>
         </div>
       </div>
@@ -795,6 +841,18 @@ nav button.active{background:var(--bg4);color:var(--ac)}
               <div style="font-size:.62rem;color:var(--tx3);margin-top:.2rem">Positiv = hinzufügen, Negativ = abziehen</div>
             </div>
 
+            <!-- Auswertung -->
+            <div class="admin-section">
+              <div class="admin-sec-title">Spieltag auswerten</div>
+              <div style="font-size:.68rem;color:var(--tx2);margin-bottom:.45rem">
+                Wertet alle Scheine des aktuellen Spieltags anhand der echten Ergebnisse aus. Nur nach Spielende verwenden.
+              </div>
+              <button class="admin-btn admin-btn-ac" style="width:100%;justify-content:center" onclick="adminSettleNow()">
+                ⚡ Spieltag <span id="aSettleMd"></span> jetzt auswerten
+              </button>
+              <div id="aSettleStatus" style="display:none;font-size:.68rem;margin-top:.35rem;padding:.35rem .5rem;background:var(--bg3);border-radius:5px"></div>
+            </div>
+
             <!-- Gefahrenzone -->
             <div class="admin-section">
               <div class="admin-sec-title" style="color:var(--loss)">Gefahrenzone</div>
@@ -824,7 +882,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 </div>
 
 <footer style="text-align:center;padding:1.2rem;color:var(--tx3);font-size:.65rem;border-top:1px solid var(--bo);margin-top:1rem">
-  KickAnalyse Pro &nbsp;·&nbsp; Daten: <span style="color:var(--blue)">OpenLigaDB.de</span> &nbsp;·&nbsp; KI: <span style="color:var(--ac)">Anthropic Claude</span>
+  FreeBet &nbsp;·&nbsp; Daten: <span style="color:var(--blue)">OpenLigaDB.de</span> &nbsp;·&nbsp; KI: <span style="color:var(--ac)">Anthropic Claude</span>
   &nbsp;·&nbsp; <span style="color:#ff8888">⚠ Keine Wettberatung</span>
 </footer>
 
@@ -848,7 +906,7 @@ function mk(tag, attrs, text) {
 function ap(parent, child) { parent.appendChild(child); return child; }
 
 // ── State ────────────────────────────────────────────────────────────────────
-var ST = { matches: [], table: [], sel: null, chatHist: [], curMD: null, curSeason: null };
+var ST = { matches: [], matchesCur: [], table: [], sel: null, chatHist: [], curMD: null, curSeason: null };
 
 // ── Season ───────────────────────────────────────────────────────────────────
 function curSeason() {
@@ -871,7 +929,7 @@ var CR = {
   'FC Augsburg':              'https://upload.wikimedia.org/wikipedia/de/thumb/b/b5/FC_Augsburg_logo.svg/120px-FC_Augsburg_logo.svg.png',
   'VfL Wolfsburg':            'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Logo-VfL-Wolfsburg.svg/120px-Logo-VfL-Wolfsburg.svg.png',
   'SV Werder Bremen':         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/SV-Werder-Bremen-Logo.svg/120px-SV-Werder-Bremen-Logo.svg.png',
-  '1. FC Union Berlin':       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/1._FC_Union_Berlin_Logo.svg/200px-1._FC_Union_Berlin_Logo.svg.png',
+  '1. FC Union Berlin':       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/1._FC_Union_Berlin_Logo.svg/1280px-1._FC_Union_Berlin_Logo.svg.png',
   '1. FC Heidenheim 1846':    'https://upload.wikimedia.org/wikipedia/de/thumb/5/5d/1._FC_Heidenheim_1846.svg/120px-1._FC_Heidenheim_1846.svg.png',
   'Holstein Kiel':            'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Holstein_Kiel_logo.svg/120px-Holstein_Kiel_logo.svg.png',
   'FC St. Pauli 1910':        'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_St._Pauli_Logo.svg/120px-FC_St._Pauli_Logo.svg.png',
@@ -879,9 +937,15 @@ var CR = {
   '1. FSV Mainz 05':          'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/FSV_Mainz_05_Logo.png/120px-FSV_Mainz_05_Logo.png',
   'VfL Bochum 1848':          'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/VfL_Bochum_logo.svg/120px-VfL_Bochum_logo.svg.png',
 };
+var WHITE_BG_LOGOS = {};
+
 function getCrest(name, apiUrl) {
   if (apiUrl && apiUrl.indexOf('http') === 0) return apiUrl;
   return CR[name] || null;
+}
+
+function hasWhiteBg(name) {
+  return !!WHITE_BG_LOGOS[name];
 }
 
 // ── API ──────────────────────────────────────────────────────────────────────
@@ -948,16 +1012,16 @@ function loadBL() {
     if (el('stSeason')) el('stSeason').textContent = 'Saison ' + label;
     if (el('mdBadge'))  el('mdBadge').textContent  = 'Spieltag ' + md;
 
-    return Promise.all([
-      apiFetch('/getmatchdata/bl1/' + season + '/' + md).catch(function() { return []; }),
-      apiFetch('/getmatchdata/bl1/' + season + '/' + (md + 1)).catch(function() { return []; })
-    ]);
-  }).then(function(results) {
-    var all = results[0].concat(results[1]);
-    if (!all.length) throw new Error('Keine Spiele');
-    var up = all.filter(function(m) { return !m.matchIsFinished; });
-    ST.matches = up.length ? up : all.slice(0, 9);
-    if (el('stTotal')) el('stTotal').textContent = ST.matches.length;
+    return apiFetch('/getmatchdata/bl1/' + season + '/' + md).catch(function() { return []; });
+  }).then(function(cur) {
+    if (!cur.length) throw new Error('Keine Spiele');
+
+    // Nur aktueller Spieltag
+    var curUp = cur.filter(function(m) { return !m.matchIsFinished; });
+    ST.matchesCur = curUp.length ? curUp : cur;
+    ST.matches    = ST.matchesCur;
+
+    if (el('stTotal')) el('stTotal').textContent = ST.matchesCur.length;
   });
 }
 
@@ -1020,9 +1084,20 @@ function loadSeasonForm() {
       formMap[id2].push(g1 < g2 ? 'W' : g1 > g2 ? 'L' : 'D');
     });
     // Store last 5 (reversed = newest first)
+    // Also store by teamInfoID in case table uses different ID field
     Object.keys(formMap).forEach(function(id) {
       var arr = formMap[id];
-      FORM_CACHE[id] = arr.slice(-5).reverse().join(''); // last 5, newest first
+      var form = arr.slice(-5).reverse().join('');
+      FORM_CACHE[id] = form;
+    });
+    // Cross-reference: also index by teamName for fuzzy lookup
+    finished.forEach(function(m) {
+      ['team1','team2'].forEach(function(side) {
+        var t = m[side];
+        if (t && t.teamId && t.teamName) {
+          FORM_CACHE['name_' + t.teamName] = FORM_CACHE[t.teamId];
+        }
+      });
     });
   }).catch(function(e) {
     console.warn('Form laden fehlgeschlagen:', e.message);
@@ -1146,7 +1221,8 @@ function renderMatches() {
     // Home side
     var hSide = mk('div', { cls: 'tside' });
     if (hC) {
-      var hImg = mk('img', { cls: 'crest', src: hC, alt: hN });
+      var hCls = hasWhiteBg(hN) ? 'crest crest-mix' : 'crest';
+      var hImg = mk('img', { cls: hCls, src: hC, alt: hN });
       hImg.onerror = function() {
         var fb = CR[hN];
         if (fb && this.src !== fb) { this.src = fb; }
@@ -1189,7 +1265,8 @@ function renderMatches() {
     aTxt.style.textAlign = 'right';
     ap(aSide, aTxt);
     if (aC) {
-      var aImg = mk('img', { cls: 'crest', src: aC, alt: aN });
+      var aCls = hasWhiteBg(aN) ? 'crest crest-mix' : 'crest';
+      var aImg = mk('img', { cls: aCls, src: aC, alt: aN });
       aImg.onerror = function() {
         var fb = CR[aN];
         if (fb && this.src !== fb) { this.src = fb; }
@@ -1267,7 +1344,8 @@ function selectMatch(m, pr) {
   function dpTeam(url, name, s) {
     var t = mk('div', { cls: 'dp-team' });
     if (url) {
-      var img = mk('img', { cls: 'dp-crest', src: url, alt: name });
+      var dpCls = hasWhiteBg(name) ? 'dp-crest dp-crest-mix' : 'dp-crest';
+      var img = mk('img', { cls: dpCls, src: url, alt: name });
       (function(imgEl, teamName) {
         imgEl.onerror = function() {
           var fb = CR[teamName];
@@ -1417,7 +1495,7 @@ function renderTable() {
     var c    = getCrest(t.teamName, t.teamIconUrl);
     var diff = (t.goals||0) - (t.opponentGoals||0);
     // Use real form from FORM_CACHE if available
-    var formStr = FORM_CACHE[t.teamID] || FORM_CACHE[t.teamInfoID] || '';
+    var formStr = FORM_CACHE[t.teamID] || FORM_CACHE[t.teamInfoID] || FORM_CACHE['name_' + t.teamName] || '';
     var fl = [0,1,2,3,4].map(function(fi) { return formStr[fi] || '?'; });
 
     var tr = mk('tr');
@@ -1563,7 +1641,8 @@ function loadDemoData() {
       team1:{teamId:89,  teamName:'1. FC Union Berlin',       shortName:'FCU', teamIconUrl:null},
       team2:{teamId:54,  teamName:'FC St. Pauli 1910',        shortName:'STP', teamIconUrl:null}, matchResults:[] },
   ];
-  if (el('stTotal')) el('stTotal').textContent = ST.matches.length;
+  ST.matchesCur = ST.matches.slice();
+  if (el('stTotal')) el('stTotal').textContent = ST.matchesCur.length;
 
   // Realistic table 2024/25
   ST.table = [
@@ -1829,13 +1908,14 @@ function calcTipProb(tipId, wH, wD, wA, xH, xA) {
 }
 
 function calcOdds(prob) {
-  // Wahrscheinlichkeit -> Quote wie ein Buchmacher
-  // Floor: 6% implied prob (max ~15.0), Ceiling: 93% (min ~1.07)
-  // Overround: 8% (entspricht ~115-120% Gesamtmarkt wie Bundesliga BMs)
-  var p = Math.max(6, Math.min(93, prob));
-  var pAdj = p / 100 * 1.08;  // Vig einbauen
+  // Buchmacher-Quoten: realistisch kalibriert
+  // Überrund 7% (BL-Buchmacher: ~108-112% Gesamtmarkt)
+  // Mindestwahrscheinlichkeit 8% → max Quote ~11.5
+  // Höchstwahrscheinlichkeit 94% → min Quote ~1.05
+  var p = Math.max(8, Math.min(94, prob));
+  var pAdj = p / 100 * 1.07;
   var odds = 1 / pAdj;
-  // Auf 0.05 runden wie echte Buchmacher
+  // Auf 0.05 runden
   return Math.max(1.05, Math.round(odds * 20) / 20);
 }
 
@@ -2488,6 +2568,10 @@ function showGroupMain() {
     G_UNSUB = setInterval(fbSync, 10000);
     fbSync();
   }
+  // Auto-settle check every 5 minutes
+  if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
+  window.G_SETTLE_TIMER = setInterval(gCheckAutoSettle, 5 * 60 * 1000);
+  gCheckAutoSettle(); // check immediately on load too
   // Start 1-second countdown timer
   startCountdownTimer();
 
@@ -2645,13 +2729,9 @@ function parseMatchTime(dtStr) {
 function getMatchdayDeadline() {
   // Nur Spiele des AKTUELLEN Spieltags (nicht nächster Spieltag)
   // und nur nicht abgeschlossene Spiele
-  var matches = ST.matches.filter(function(m) {
-    return !m.matchIsFinished && m.leagueMatchday === ST.curMD;
-  });
-  // Fallback: falls leagueMatchday nicht gesetzt, alle nicht-fertigen nehmen
-  if (!matches.length) {
-    matches = ST.matches.filter(function(m) { return !m.matchIsFinished; });
-  }
+  // Nutze nur den aktuellen Spieltag
+  var matches = (ST.matchesCur || []).filter(function(m) { return !m.matchIsFinished; });
+  if (!matches.length) matches = ST.matchesCur || ST.matches.filter(function(m) { return !m.matchIsFinished; });
   if (!matches.length) return null;
   var times = matches
     .map(function(m) { return m.matchDateTime ? parseMatchTime(m.matchDateTime).getTime() : Infinity; })
@@ -2686,67 +2766,126 @@ function deadlineText() {
 // Prüfe nach jedem Sync ob alle Spiele beendet sind → automatisch auswerten
 function getLastMatchTime() {
   // Letzter Anpfiff des aktuellen Spieltags
-  var curMatches = ST.matches.filter(function(m) { return m.leagueMatchday === ST.curMD; });
-  if (!curMatches.length) curMatches = ST.matches;
+  var curMatches = ST.matchesCur || ST.matches;
   var times = curMatches.map(function(m) {
     return m.matchDateTime ? parseMatchTime(m.matchDateTime).getTime() : 0;
   }).filter(function(t) { return t > 0; });
   return times.length ? Math.max.apply(null, times) : 0;
 }
 
-function gCheckAutoSettle() {
-  if (!GRP || !ST.matches.length) return;
-  // Auto-Auswertung: 3 Stunden nach Anpfiff des LETZTEN Spiels
-  var lastKickoff = getLastMatchTime();
-  if (!lastKickoff) return;
-  var settleAfter = lastKickoff + 3 * 3600 * 1000; // +3h
-  if (Date.now() < settleAfter) return; // noch nicht Zeit
-
-  // Lade echte Ergebnisse und werte alle offenen Scheine dieses Spieltags aus
+// ── Kern-Auswertungslogik ────────────────────────────────────────────────────
+function doSettleMatchday(matchdayNr, onDone) {
+  // Lädt Ergebnisse von OL und wertet alle Scheine des Spieltags aus
   var season = ST.curSeason || (function(){ var d=new Date(); return (d.getMonth()+1)>=7?d.getFullYear():d.getFullYear()-1; })();
-  apiFetch('/getmatchdata/bl1/' + season).then(function(all) {
+
+  apiFetch('/getmatchdata/bl1/' + season + '/' + matchdayNr).then(function(mdMatches) {
+    // Baue Ergebnis-Map
     var resMap = {};
-    all.filter(function(m){ return m.matchIsFinished; }).forEach(function(m) {
+    (mdMatches || []).forEach(function(m) {
       var r = null;
-      if (m.matchResults) { for (var i=0;i<m.matchResults.length;i++) { if (m.matchResults[i].resultTypeID===2){r=m.matchResults[i];break;} } }
-      if (!r && m.matchResults && m.matchResults.length) r = m.matchResults[0];
-      if (r) resMap[m.matchID] = { g1: r.pointsTeam1, g2: r.pointsTeam2 };
+      if (m.matchResults) {
+        for (var i = 0; i < m.matchResults.length; i++) {
+          if (m.matchResults[i].resultTypeID === 2) { r = m.matchResults[i]; break; }
+        }
+        if (!r && m.matchResults.length) r = m.matchResults[0];
+      }
+      if (r) resMap[m.matchID] = { g1: r.pointsTeam1, g2: r.pointsTeam2, finished: m.matchIsFinished };
     });
 
-    // Reload fresh from Firebase
-    (G_FB_URL ? fbGet('groups/' + GRP.code) : Promise.resolve(loadGrpLocal(GRP.code))).then(function(freshGrp) {
-      if (!freshGrp) return;
-      var changed = false;
+    var finishedCount = Object.keys(resMap).filter(function(k){ return resMap[k].finished; }).length;
+    var totalCount    = mdMatches ? mdMatches.length : 0;
+
+    // Lade frische Gruppendaten aus Firebase
+    var p = G_FB_URL ? fbGet('groups/' + GRP.code) : Promise.resolve(loadGrpLocal(GRP.code));
+    p.then(function(freshGrp) {
+      if (!freshGrp) { if (onDone) onDone(0, 0, 'Gruppe nicht gefunden'); return; }
+
+      var settled = 0, alreadyDone = 0;
       freshGrp.slips = (freshGrp.slips || []).map(function(slip) {
-        if (slip.matchday !== ST.curMD) return slip;
-        if (slip.result !== 'pending') return slip; // already settled
+        if (slip.matchday !== matchdayNr) return slip;
+        if (slip.result !== 'pending') { alreadyDone++; return slip; }
+
         slip.bets = slip.bets.map(function(bet) {
           if (bet.outcome !== 'pending') return bet;
           var res = resMap[bet.matchID];
-          if (!res) return bet;
+          if (!res || !res.finished) return bet; // Spiel noch nicht fertig
           var out = evaluateTip(bet.tipId, res.g1, res.g2);
-          if (out) { bet.outcome = out; changed = true; }
+          if (out) { bet.outcome = out; settled++; }
           return bet;
         });
-        var allBetsDone = slip.bets.every(function(b){ return b.outcome !== 'pending'; });
-        var allWon      = slip.bets.every(function(b){ return b.outcome === 'win'; });
-        if (allBetsDone) {
+
+        // Schein abschließen wenn alle Wetten ausgewertet
+        var allDone = slip.bets.every(function(b){ return b.outcome !== 'pending'; });
+        var allWon  = slip.bets.every(function(b){ return b.outcome === 'win'; });
+        if (allDone) {
           slip.result = allWon ? 'win' : 'loss';
-          changed = true;
           if (allWon && freshGrp.members[slip.member]) {
             freshGrp.members[slip.member].balance =
               Math.round((freshGrp.members[slip.member].balance + slip.potPayout) * 100) / 100;
+            if (!freshGrp.members[slip.member].history) freshGrp.members[slip.member].history = [];
+            freshGrp.members[slip.member].history.push({
+              date: new Date().toLocaleDateString('de-DE'),
+              change: slip.potPayout,
+              reason: 'Gewonnener Schein Spieltag ' + matchdayNr
+            });
           }
         }
         return slip;
       });
-      if (changed) {
-        GRP = freshGrp;
-        saveGrp(GRP);
-        refreshGroupUI();
-      }
-    }).catch(function(){});
-  }).catch(function(){});
+
+      GRP = freshGrp;
+      saveGrp(GRP);
+      refreshGroupUI();
+      if (onDone) onDone(settled, finishedCount, null, totalCount);
+    }).catch(function(e){ if (onDone) onDone(0, 0, e.message); });
+  }).catch(function(e){ if (onDone) onDone(0, 0, e.message); });
+}
+
+function gCheckAutoSettle() {
+  if (!GRP || !ST.matchesCur || !ST.matchesCur.length) return;
+
+  // Bedingung: 3 Stunden nach dem letzten Anpfiff des Spieltags
+  var lastKickoff = getLastMatchTime();
+  if (!lastKickoff) return;
+  var settleAfter = lastKickoff + 3 * 3600 * 1000;
+  if (Date.now() < settleAfter) return;
+
+  // Prüfe ob es noch offene Scheine gibt
+  var hasPending = (GRP.slips || []).some(function(s) {
+    return s.matchday === ST.curMD && s.result === 'pending';
+  });
+  if (!hasPending) return; // Alles schon ausgewertet
+
+  doSettleMatchday(ST.curMD, function(settled, finished, err) {
+    if (!err && settled > 0) {
+      console.log('Auto-Auswertung: ' + settled + ' Wetten ausgewertet');
+    }
+  });
+}
+
+// Admin: manuell auswerten
+function adminSettleNow() {
+  if (!isAdmin()) return;
+  var md = ST.curMD;
+  if (!md) { alert('Spieltag nicht geladen.'); return; }
+
+  var adminBox = el('aSettleStatus');
+  if (adminBox) { adminBox.textContent = 'Lade Ergebnisse…'; adminBox.style.display = 'block'; adminBox.style.color = 'var(--draw)'; }
+
+  doSettleMatchday(md, function(settled, finished, err, total) {
+    if (err) {
+      if (adminBox) { adminBox.textContent = 'Fehler: ' + err; adminBox.style.color = 'var(--loss)'; }
+      return;
+    }
+    var msg = '';
+    if (finished < total) {
+      msg = 'Noch nicht alle Spiele beendet (' + finished + '/' + total + ').';
+      if (settled > 0) msg += ' ' + settled + ' Wetten ausgewertet.';
+    } else {
+      msg = 'Auswertung abgeschlossen. ' + settled + ' Wetten ausgewertet.';
+    }
+    if (adminBox) { adminBox.textContent = msg; adminBox.style.color = settled > 0 ? 'var(--win)' : 'var(--tx2)'; }
+  });
 }
 
 function refreshGroupUI() {
@@ -2789,24 +2928,21 @@ function renderGMatchList() {
   var list = el('gMatchList');
   list.innerHTML = '';
   var canBet = canStillBet();
-  var past = isPastDeadline();
 
-  if (!ST.matches.length) {
-    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Keine Spiele geladen.'));
+  // Nur aktueller Spieltag
+  var curMatches = ST.matchesCur && ST.matchesCur.length ? ST.matchesCur : [];
+  if (!curMatches.length) {
+    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Keine Spiele für diesen Spieltag.'));
     return;
   }
 
   var tipLabels2 = {
     home:'1 Heimsieg', draw:'X Unentschieden', away:'2 Auswärtssieg',
-    '1x':'1X', 'x2':'X2', '12':'12',
-    o25:'Über 2,5', u25:'Unter 2,5', btts:'Beide treffen'
+    '1x':'1X (H/X)', 'x2':'X2 (X/A)', '12':'12 (H/A)',
+    o25:'Über 2,5 Tore', u25:'Unter 2,5 Tore',
+    o35:'Über 3,5 Tore', u35:'Unter 3,5 Tore',
+    btts:'Beide treffen', nbtts:'Nicht beide treffen'
   };
-
-  // Nur aktuelle Spieltag-Begegnungen anzeigen
-  var curMatches = ST.matches.filter(function(m) {
-    return m.leagueMatchday === ST.curMD;
-  });
-  if (!curMatches.length) curMatches = ST.matches; // fallback
 
   curMatches.forEach(function(m) {
     var hN = m.team1 ? (m.team1.teamName || '?') : '?';
@@ -3276,15 +3412,30 @@ function isAdmin() {
   return GRP && G_ME && GRP.creator === G_ME;
 }
 
-function renderAdminPanel() {
+function toggleAdminPanel() {
   var panel = el('gAdminPanel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  var btn = el('gAdminToggleBtn');
+  if (btn) btn.textContent = panel.style.display === 'none' ? '⚙️ Admin' : '⚙️ Admin ✕';
+}
+
+function renderAdminPanel() {
+  var panel    = el('gAdminPanel');
+  var adminBtn = el('gAdminToggleBtn');
   if (!panel) return;
 
   if (!isAdmin()) {
     panel.style.display = 'none';
+    if (adminBtn) adminBtn.style.display = 'none';
     return;
   }
-  panel.style.display = 'block';
+  // Show the admin toggle button in topbar
+  if (adminBtn) adminBtn.style.display = 'inline-block';
+  // Keep panel hidden until toggled (less cluttered)
+  // but show it if it was already open
+  // Show panel by default for admin (they need to see it)
+  if (panel.style.display === '') panel.style.display = 'block';
 
   // Settings
   var cfg = GRP.settings || { startBalance: 1000, minStake: 5, maxStake: 0 };
@@ -3302,6 +3453,10 @@ function renderAdminPanel() {
 
   // Member list
   renderAdminMemberList();
+
+  // Fill matchday in settle button
+  var settleMd = el('aSettleMd');
+  if (settleMd) settleMd.textContent = ST.curMD ? 'Spieltag ' + ST.curMD : '';
 
   // Adjust balance dropdown
   var sel = el('aAdjMember');
@@ -3634,6 +3789,8 @@ loadBL().then(function() {
   renderMatches();
   loadTable();
   loadSeasonForm().then(function() {
+    // Re-render table with real form data
+    renderTable();
     // Re-render detail panel if a match is selected
     if (ST.sel) {
       var pr = calcProbs(ST.sel.matchID || 0,
