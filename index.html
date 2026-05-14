@@ -2907,9 +2907,10 @@ function showGroupSetup() {
 
 // ── Create / Join ─────────────────────────────────────────
 function createGroup() {
-  var name  = el('gMyName').value.trim();
-  var gname = el('gNewName').value.trim();
-  if (!name || !gname) { alert('Bitte Name und Gruppenname eingeben.'); return; }
+  var name  = G_ME || '';
+  var gname = (el('gNewName') && el('gNewName').value.trim()) || '';
+  if (!name)  { alert('Bitte zuerst einloggen.'); return; }
+  if (!gname) { alert('Bitte einen Gruppennamen eingeben.'); return; }
 
   var code = genCode();
   var g = {
