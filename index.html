@@ -313,6 +313,32 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 .invite-link-box:hover{border-color:rgba(71,200,255,.4)}
 .admin-badge{background:rgba(232,255,71,.12);color:var(--ac);font-size:.6rem;padding:1px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-weight:600}
 
+
+/* ── LOGIN & MULTI-GROUP ── */
+.login-card{max-width:400px;margin:2rem auto;background:var(--bg2);border:1px solid var(--bo);border-radius:14px;padding:1.75rem 1.5rem;text-align:center}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:var(--ac);margin-bottom:.25rem}
+.login-sub{font-size:.78rem;color:var(--tx2);margin-bottom:1.5rem}
+.login-field{margin-bottom:.75rem;text-align:left}
+.login-field label{font-size:.68rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:.28rem}
+.pin-input{letter-spacing:.5rem;font-family:'DM Mono',monospace;font-size:1.1rem;text-align:center}
+.login-btn{width:100%;background:var(--ac);color:#08090d;border:none;border-radius:8px;padding:.65rem;font-weight:700;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;margin-top:.25rem}
+.login-btn:hover{background:#d4e640}
+.login-switch{font-size:.72rem;color:var(--tx3);margin-top:.85rem}
+.login-switch a{color:var(--blue);cursor:pointer;text-decoration:none}
+.login-switch a:hover{text-decoration:underline}
+.profile-bar{display:flex;align-items:center;gap:.6rem;background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:.55rem .85rem;margin-bottom:.85rem}
+.profile-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--blue));display:grid;place-items:center;font-size:.75rem;font-weight:700;color:#08090d;flex-shrink:0}
+.profile-name{font-size:.82rem;font-weight:600;flex:1}
+.profile-groups{font-size:.64rem;color:var(--tx2)}
+.group-list{display:flex;flex-direction:column;gap:.45rem;margin-bottom:.85rem}
+.group-item{background:var(--bg3);border:1px solid var(--bo);border-radius:8px;padding:.65rem .85rem;display:flex;align-items:center;gap:.65rem;cursor:pointer;transition:.15s}
+.group-item:hover{border-color:var(--bo2)}
+.group-item.active{border-color:var(--ac);background:rgba(232,255,71,.05)}
+.group-item-name{font-size:.8rem;font-weight:600;flex:1}
+.group-item-bal{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--ac)}
+.group-item-md{font-size:.62rem;color:var(--tx3)}
+.group-actions{display:flex;gap:.45rem;flex-wrap:wrap}
+
 @media(max-width:900px){
   .layout{grid-template-columns:1fr}
   .dp{position:static;max-height:none}
@@ -700,49 +726,84 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 
     <!-- SETUP -->
     <div id="groupSetup">
-      <div style="max-width:460px;margin:2rem auto">
-        <div style="background:var(--bg2);border:1px solid var(--bo);border-radius:12px;padding:1.5rem">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;color:var(--ac);margin-bottom:.3rem">🏆 GRUPPENLIGA</div>
-          <div style="font-size:.76rem;color:var(--tx2);margin-bottom:1.1rem;line-height:1.5">
-            Spielt als Gruppe gegeneinander – auch remote! Pro Spieltag darf jeder <strong style="color:var(--tx)">genau einen Kombischein</strong> abgeben. Je mehr Spiele kombiniert, desto höher die Quote. Startet jeder mit <strong style="color:var(--ac)">1.000 €</strong> fiktivem Guthaben.
-          </div>
-          <!-- Firebase Setup -->
-          <div id="fbSetupBox" style="background:var(--bg3);border-radius:8px;padding:.85rem;margin-bottom:1rem;border:1px solid rgba(232,255,71,.15)">
-            <div style="font-size:.72rem;font-weight:700;color:var(--ac);margin-bottom:.35rem">🔥 Firebase Datenbank-URL</div>
-            <div style="font-size:.68rem;color:var(--tx2);margin-bottom:.5rem;line-height:1.45">
-              Für Remote-Multiplayer: <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a> → Projekt erstellen → Realtime Database → Testmodus → URL kopieren
+
+      <!-- Screen 1: Login -->
+      <div id="gsLogin">
+        <div class="login-card">
+          <div class="login-logo">FREE<span style="color:var(--blue)">BET</span></div>
+          <div class="login-sub">Melde dich an um Gruppen beizutreten und deine Scheine zu verwalten</div>
+
+          <div style="background:var(--bg3);border-radius:8px;padding:.75rem;margin-bottom:1rem;text-align:left;border:1px solid rgba(232,255,71,.12)">
+            <div style="font-size:.68rem;font-weight:700;color:var(--ac);margin-bottom:.28rem">🔥 Firebase URL (einmalig)</div>
+            <div style="display:flex;gap:.38rem">
+              <input id="gFbUrl" class="cin" placeholder="https://...firebasedatabase.app" style="flex:1;font-size:.68rem;font-family:'DM Mono',monospace">
+              <button onclick="saveFbUrl()" style="background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.38rem .65rem;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap">OK</button>
             </div>
-            <div style="display:flex;gap:.4rem">
-              <input id="gFbUrl" class="cin" placeholder="https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app" style="flex:1;font-size:.7rem;font-family:'DM Mono',monospace">
-              <button onclick="saveFbUrl()" style="background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.45rem .75rem;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">Speichern</button>
-            </div>
-            <div id="fbStatus" style="font-size:.66rem;margin-top:.35rem;color:var(--tx3)">Nicht verbunden – lokal gespeichert</div>
-            <div id="fbRulesHint" style="display:none;margin-top:.6rem;background:rgba(255,90,90,.07);border:1px solid rgba(255,90,90,.25);border-radius:7px;padding:.7rem .85rem;font-size:.7rem;line-height:1.55;color:var(--tx2)">
-              <strong style="color:var(--loss)">Schritt: Firebase-Regeln öffnen</strong><br>
-              1. <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a> öffnen<br>
-              2. Dein Projekt → <strong>Realtime Database</strong> → <strong>Regeln</strong><br>
-              3. Alles ersetzen durch:<br>
-              <code style="display:block;background:var(--bg);border-radius:4px;padding:.35rem .5rem;margin:.35rem 0;font-size:.68rem;color:var(--ac)">{<br>&nbsp;&nbsp;"rules": {<br>&nbsp;&nbsp;&nbsp;&nbsp;".read": true,<br>&nbsp;&nbsp;&nbsp;&nbsp;".write": true<br>&nbsp;&nbsp;}<br>}</code>
-              4. <strong>Veröffentlichen</strong> klicken → dann hier nochmal <strong>Speichern</strong>
+            <div id="fbStatus" style="font-size:.63rem;margin-top:.25rem;color:var(--tx3)">Nicht verbunden</div>
+            <div id="fbRulesHint" style="display:none;margin-top:.5rem;background:rgba(255,90,90,.07);border:1px solid rgba(255,90,90,.2);border-radius:6px;padding:.6rem;font-size:.67rem;color:var(--tx2);line-height:1.5">
+              <strong style="color:var(--loss)">Firebase-Regeln:</strong> console.firebase.google.com → Projekt → Realtime Database → Regeln → .read + .write auf <code style="color:var(--ac)">true</code> → Veröffentlichen
             </div>
           </div>
 
-          <div style="font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Dein Name</div>
-          <input id="gMyName" class="cin" placeholder="z.B. Max" style="width:100%;margin-bottom:.9rem">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
-            <div>
-              <div style="font-size:.7rem;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:1px;margin-bottom:.45rem">Neue Gruppe</div>
-              <input id="gNewName" class="cin" placeholder="Gruppenname" style="width:100%;margin-bottom:.4rem">
-              <button onclick="createGroup()" class="slip-submit" style="margin-top:0">Erstellen</button>
+          <div id="gsLoginForm">
+            <div class="login-field"><label>Dein Name</label><input class="cin" id="loginName" placeholder="z.B. Max" style="width:100%"></div>
+            <div class="login-field"><label>PIN (4 Ziffern)</label><input class="cin pin-input" id="loginPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
+            <button class="login-btn" onclick="doLogin()">Anmelden</button>
+            <div class="login-switch">Noch kein Konto? <a onclick="showRegister()">Jetzt registrieren</a></div>
+          </div>
+
+          <div id="gsRegisterForm" style="display:none">
+            <div class="login-field"><label>Name (wird in Gruppen angezeigt)</label><input class="cin" id="regName" placeholder="z.B. Max" style="width:100%"></div>
+            <div class="login-field"><label>PIN wählen (4 Ziffern)</label><input class="cin pin-input" id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
+            <div class="login-field"><label>PIN bestätigen</label><input class="cin pin-input" id="regPin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
+            <button class="login-btn" onclick="doRegister()">Konto erstellen</button>
+            <div class="login-switch">Bereits registriert? <a onclick="showLogin()">Anmelden</a></div>
+          </div>
+
+          <div id="gsLoginError" style="display:none;font-size:.72rem;color:var(--loss);margin-top:.5rem;padding:.4rem .6rem;background:rgba(255,90,90,.08);border-radius:6px"></div>
+        </div>
+      </div>
+
+      <!-- Screen 2: Meine Gruppen -->
+      <div id="gsGroups" style="display:none">
+        <div style="max-width:480px;margin:0 auto">
+          <div class="profile-bar">
+            <div class="profile-avatar" id="gsAvatar">?</div>
+            <div style="flex:1">
+              <div class="profile-name" id="gsProfileName">–</div>
+              <div class="profile-groups" id="gsProfileGroups">Keine Gruppen</div>
             </div>
-            <div>
-              <div style="font-size:.7rem;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:.45rem">Gruppe beitreten</div>
-              <input id="gJoinCode" class="cin" placeholder="6-stelliger Code" style="width:100%;margin-bottom:.4rem;font-family:'DM Mono',monospace;letter-spacing:2px">
-              <button onclick="joinGroup()" class="slip-submit" style="margin-top:0;background:var(--blue);color:#08090d">Beitreten</button>
+            <button onclick="doLogout()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.24rem .55rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Abmelden</button>
+          </div>
+
+          <div style="font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Meine Gruppen</div>
+          <div class="group-list" id="gsGroupList"></div>
+
+          <div class="group-actions">
+            <button onclick="showCreateGroup()" class="slip-submit" style="flex:1;margin-top:0;font-size:.76rem">+ Neue Gruppe</button>
+            <button onclick="showJoinGroup()" style="flex:1;background:rgba(71,200,255,.1);border:1px solid rgba(71,200,255,.25);color:var(--blue);border-radius:7px;padding:.58rem;font-size:.76rem;cursor:pointer;font-family:'DM Sans',sans-serif">Code eingeben</button>
+          </div>
+
+          <div id="gsCreateForm" style="display:none;margin-top:.85rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1rem">
+            <div style="font-size:.74rem;font-weight:600;color:var(--ac);margin-bottom:.6rem">Neue Gruppe erstellen</div>
+            <div class="login-field"><label>Gruppenname</label><input class="cin" id="gNewName" placeholder="z.B. WM-Tipp-Runde" style="width:100%"></div>
+            <div style="display:flex;gap:.45rem">
+              <button onclick="createGroup()" class="slip-submit" style="flex:1;margin-top:0">Erstellen</button>
+              <button onclick="el('gsCreateForm').style.display='none'" style="background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:7px;padding:.58rem .85rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem">×</button>
+            </div>
+          </div>
+
+          <div id="gsJoinForm" style="display:none;margin-top:.85rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1rem">
+            <div style="font-size:.74rem;font-weight:600;color:var(--blue);margin-bottom:.6rem">Gruppe beitreten</div>
+            <div class="login-field"><label>Gruppencode</label><input class="cin" id="gJoinCode" placeholder="ABC123" style="width:100%;font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase"></div>
+            <div style="display:flex;gap:.45rem">
+              <button onclick="joinGroup()" style="flex:1;background:var(--blue);color:#08090d;border:none;border-radius:7px;padding:.58rem;font-weight:700;font-size:.76rem;cursor:pointer;font-family:'DM Sans',sans-serif">Beitreten</button>
+              <button onclick="el('gsJoinForm').style.display='none'" style="background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:7px;padding:.58rem .85rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem">×</button>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- MAIN -->
@@ -1506,22 +1567,106 @@ function selectMatch(m, pr) {
   ap(aFRow, buildFormBadges(aForm));
   ap(body, aFRow);
 
-  // H2H
-  secLbl('H2H letzte 5 Jahre');
-  var h2hT = ['W','D','L','W','W'];
-  var h2hS = ['2-1','1-1','0-2','1-0','3-1'];
-  var h2hY = ['2024/25','2023/24','2023/24','2022/23','2021/22'];
-  for (var hi = 0; hi < 5; hi++) {
-    var ht = h2hT[(seed + hi) % 5];
-    var row = mk('div', { cls: 'h2h-row' });
-    var badge = mk('span', { cls: 'tag ' + (ht==='W'?'t-h':ht==='D'?'t-m':'t-l') }, ht==='W'?'HEIMSIEG':ht==='D'?'UNENT.':'AUSWÄRTS');
-    badge.style.fontSize = '.6rem';
-    ap(row, badge);
-    var sc2 = mk('span', { style: 'font-family:\'Bebas Neue\',sans-serif;font-size:.86rem;letter-spacing:1px' }, h2hS[hi]);
-    ap(row, sc2);
-    var yr = mk('span', { style: 'margin-left:auto;font-size:.66rem;color:var(--tx2)' }, h2hY[hi]);
-    ap(row, yr);
-    ap(body, row);
+  // H2H – echte Daten von OpenLigaDB
+  var h2hSec = mk('div', { cls: 'dp-sec' }, 'H2H letzte Begegnungen');
+  ap(body, h2hSec);
+
+  var h2hContainer = mk('div');
+  ap(body, h2hContainer);
+
+  // Loading placeholder
+  var h2hLoading = mk('div', { style: 'font-size:.68rem;color:var(--tx3);padding:.35rem 0' }, 'Lade H2H-Daten…');
+  ap(h2hContainer, h2hLoading);
+
+  // Load real H2H data if we have team IDs
+  var hTeamId = m.team1 ? (m.team1.teamId || m.team1.teamID) : null;
+  var aTeamId = m.team2 ? (m.team2.teamId || m.team2.teamID) : null;
+
+  if (hTeamId && aTeamId) {
+    apiFetch('/getmatchdata/' + hTeamId + '/' + aTeamId)
+      .then(function(matches) {
+        h2hContainer.innerHTML = '';
+        if (!matches || !matches.length) {
+          ap(h2hContainer, mk('div', { style: 'font-size:.68rem;color:var(--tx3);padding:.35rem 0' }, 'Keine H2H-Daten gefunden'));
+          return;
+        }
+        // Filter: nur abgeschlossene Spiele, letzten 5 Saisons, neuste zuerst
+        var finished = matches.filter(function(mx) { return mx.matchIsFinished; });
+        finished.sort(function(a, b) { return new Date(b.matchDateTime) - new Date(a.matchDateTime); });
+        var recent = finished.slice(0, 6);
+
+        if (!recent.length) {
+          ap(h2hContainer, mk('div', { style: 'font-size:.68rem;color:var(--tx3)' }, 'Keine abgeschlossenen Begegnungen'));
+          return;
+        }
+
+        recent.forEach(function(mx) {
+          var r = null;
+          if (mx.matchResults) {
+            for (var ri = 0; ri < mx.matchResults.length; ri++) {
+              if (mx.matchResults[ri].resultTypeID === 2) { r = mx.matchResults[ri]; break; }
+            }
+            if (!r && mx.matchResults.length) r = mx.matchResults[0];
+          }
+          if (!r) return;
+
+          var g1 = r.pointsTeam1, g2 = r.pointsTeam2;
+          // Determine result from HOME team perspective
+          var isHome = mx.team1 && mx.team1.teamId === hTeamId;
+          var hGoals = isHome ? g1 : g2;
+          var aGoals = isHome ? g2 : g1;
+          var result = hGoals > aGoals ? 'W' : hGoals < aGoals ? 'L' : 'D';
+
+          var dt = mx.matchDateTime ? new Date(mx.matchDateTime) : null;
+          var season = dt ? (dt.getMonth() >= 6 ? dt.getFullYear() : dt.getFullYear() - 1) : null;
+          var seasonLbl2 = season ? season + '/' + String(season+1).slice(2) : '';
+
+          var row = mk('div', { cls: 'h2h-row' });
+
+          // Result badge
+          var badge = mk('span', { cls: 'tag ' + (result==='W'?'t-h':result==='D'?'t-m':'t-l') });
+          badge.style.fontSize = '.6rem';
+          badge.textContent = result==='W' ? hS + ' siegt' : result==='D' ? 'Unent.' : aS + ' siegt';
+          ap(row, badge);
+
+          // Score
+          var sc2 = mk('span', { style: 'font-family:Bebas Neue,sans-serif;font-size:.86rem;letter-spacing:1px' });
+          sc2.textContent = hGoals + ':' + aGoals;
+          ap(row, sc2);
+
+          // Season + date
+          var yr = mk('div', { style: 'margin-left:auto;text-align:right' });
+          ap(yr, mk('div', { style: 'font-size:.66rem;color:var(--tx2)' }, seasonLbl2));
+          if (dt) ap(yr, mk('div', { style: 'font-size:.6rem;color:var(--tx3)' }, dt.toLocaleDateString('de-DE',{day:'numeric',month:'short'})));
+          ap(row, yr);
+          ap(h2hContainer, row);
+        });
+
+        // H/D/A summary
+        var wins = recent.filter(function(mx){
+          var r = null; if(mx.matchResults){for(var i=0;i<mx.matchResults.length;i++){if(mx.matchResults[i].resultTypeID===2){r=mx.matchResults[i];break;}}} if(!r&&mx.matchResults&&mx.matchResults.length)r=mx.matchResults[0]; if(!r)return false;
+          var isHome=mx.team1&&mx.team1.teamId===hTeamId; var h=isHome?r.pointsTeam1:r.pointsTeam2; var a=isHome?r.pointsTeam2:r.pointsTeam1; return h>a;
+        }).length;
+        var draws = recent.filter(function(mx){
+          var r=null; if(mx.matchResults){for(var i=0;i<mx.matchResults.length;i++){if(mx.matchResults[i].resultTypeID===2){r=mx.matchResults[i];break;}}} if(!r&&mx.matchResults&&mx.matchResults.length)r=mx.matchResults[0]; if(!r)return false;
+          var isHome=mx.team1&&mx.team1.teamId===hTeamId; var h=isHome?r.pointsTeam1:r.pointsTeam2; var a=isHome?r.pointsTeam2:r.pointsTeam1; return h===a;
+        }).length;
+        var losses = recent.length - wins - draws;
+
+        var summary = mk('div', { style: 'display:flex;gap:.5rem;margin-top:.45rem;font-size:.68rem;padding:.38rem .5rem;background:var(--bg3);border-radius:5px' });
+        var ws = mk('span', { style: 'color:var(--win)' }, wins + 'S'); ap(summary, ws);
+        var ds = mk('span', { style: 'color:var(--draw)' }, draws + 'U'); ap(summary, ds);
+        var ls = mk('span', { style: 'color:var(--loss)' }, losses + 'N'); ap(summary, ls);
+        ap(summary, mk('span', { style: 'color:var(--tx3);margin-left:auto' }, 'aus ' + recent.length + ' Spielen'));
+        ap(h2hContainer, summary);
+      })
+      .catch(function() {
+        h2hContainer.innerHTML = '';
+        ap(h2hContainer, mk('div', { style: 'font-size:.68rem;color:var(--tx3)' }, 'H2H-Daten konnten nicht geladen werden'));
+      });
+  } else {
+    h2hContainer.innerHTML = '';
+    ap(h2hContainer, mk('div', { style: 'font-size:.68rem;color:var(--tx3)' }, 'Team-IDs nicht verfügbar'));
   }
 
   // Verdict
@@ -2273,6 +2418,245 @@ function setBetOutcome(slipId, matchId, outcome) {
 
 
 // ════════════════════════════════════════════════════════
+// LOGIN & MULTI-GROUP SYSTEM
+// Profil: Name + PIN → gespeichert in localStorage
+// Mehrere Gruppen pro Nutzer möglich
+// ════════════════════════════════════════════════════════
+
+// ── Profil Storage ───────────────────────────────────────
+function getProfiles()   { try { return JSON.parse(localStorage.getItem('fb_profiles') || '{}'); } catch(_) { return {}; } }
+function saveProfiles(p) { try { localStorage.setItem('fb_profiles', JSON.stringify(p)); } catch(_) {} }
+function getSession()    { try { return JSON.parse(localStorage.getItem('fb_session')  || 'null'); } catch(_) { return null; } }
+function saveSession(s)  { try { localStorage.setItem('fb_session',  JSON.stringify(s)); } catch(_) {} }
+
+// session = { name, pin (hashed) }
+// profiles[name] = { pin, groups: ['CODE1','CODE2'] }
+
+function hashPin(pin) {
+  // Simple hash – not cryptographic but sufficient for this use case
+  var h = 0;
+  for (var i = 0; i < pin.length; i++) {
+    h = ((h << 5) - h) + pin.charCodeAt(i);
+    h |= 0;
+  }
+  return String(h);
+}
+
+// ── Login Screens ─────────────────────────────────────────
+function showLogin()    { el('gsLoginForm').style.display='block'; el('gsRegisterForm').style.display='none'; clearLoginError(); }
+function showRegister() { el('gsLoginForm').style.display='none'; el('gsRegisterForm').style.display='block'; clearLoginError(); }
+
+function setLoginError(msg) {
+  var e = el('gsLoginError');
+  if (e) { e.textContent = msg; e.style.display = 'block'; }
+}
+function clearLoginError() {
+  var e = el('gsLoginError');
+  if (e) e.style.display = 'none';
+}
+
+function doRegister() {
+  var name = (el('regName')  && el('regName').value.trim())  || '';
+  var pin  = (el('regPin')   && el('regPin').value.trim())   || '';
+  var pin2 = (el('regPin2')  && el('regPin2').value.trim())  || '';
+  if (!name) { setLoginError('Bitte einen Namen eingeben.'); return; }
+  if (name.length < 2) { setLoginError('Name muss mindestens 2 Zeichen haben.'); return; }
+  if (!/^\d{4}$/.test(pin)) { setLoginError('PIN muss genau 4 Ziffern sein.'); return; }
+  if (pin !== pin2) { setLoginError('PINs stimmen nicht überein.'); return; }
+  var profiles = getProfiles();
+  if (profiles[name]) { setLoginError('Der Name "' + name + '" ist bereits vergeben. Bitte wähle einen anderen Namen oder melde dich an.'); return; }
+  profiles[name] = { pin: hashPin(pin), groups: [] };
+  saveProfiles(profiles);
+  saveSession({ name: name });
+  localStorage.setItem('kap_g2_my_name', name);
+  clearLoginError();
+  showGroupsScreen();
+}
+
+function doLogin() {
+  var name = (el('loginName') && el('loginName').value.trim()) || '';
+  var pin  = (el('loginPin')  && el('loginPin').value.trim())  || '';
+  if (!name || !pin) { setLoginError('Bitte Name und PIN eingeben.'); return; }
+  var profiles = getProfiles();
+  var profile  = profiles[name];
+  if (!profile) { setLoginError('Kein Konto für "' + name + '" gefunden. Bitte zuerst registrieren.'); return; }
+  if (profile.pin !== hashPin(pin)) { setLoginError('Falscher PIN.'); return; }
+  saveSession({ name: name });
+  localStorage.setItem('kap_g2_my_name', name);
+  clearLoginError();
+  showGroupsScreen();
+}
+
+function doLogout() {
+  saveSession(null);
+  localStorage.removeItem('kap_g2_my_grp');
+  GRP = null; G_ME = null; G_SLIP = [];
+  stopCountdownTimer();
+  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+  if (window.G_SETTLE_TIMER) { clearInterval(window.G_SETTLE_TIMER); }
+  el('groupSetup').style.display = 'block';
+  el('groupMain').style.display  = 'none';
+  el('gsLogin').style.display    = 'block';
+  el('gsGroups').style.display   = 'none';
+  // Clear inputs
+  ['loginName','loginPin','regName','regPin','regPin2'].forEach(function(id) {
+    var el2 = el(id); if (el2) el2.value = '';
+  });
+  clearLoginError();
+}
+
+// ── Groups Screen ─────────────────────────────────────────
+function showGroupsScreen() {
+  el('gsLogin').style.display  = 'none';
+  el('gsGroups').style.display = 'block';
+
+  var name = localStorage.getItem('kap_g2_my_name') || '';
+  G_ME = name;
+
+  // Avatar initials
+  var avatar = el('gsAvatar');
+  if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+  var pname = el('gsProfileName');
+  if (pname) pname.textContent = name;
+
+  renderGroupList();
+}
+
+function renderGroupList() {
+  var list = el('gsGroupList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  var profiles = getProfiles();
+  var profile  = profiles[G_ME];
+  var groups   = profile ? (profile.groups || []) : [];
+
+  // Also check localStorage for any group codes
+  var localCode = localStorage.getItem('kap_g2_my_grp');
+  if (localCode && groups.indexOf(localCode) < 0) {
+    groups.push(localCode);
+    if (profile) { profile.groups = groups; saveProfiles(profiles); }
+  }
+
+  var pgroups = el('gsProfileGroups');
+  if (pgroups) pgroups.textContent = groups.length + ' Gruppe' + (groups.length !== 1 ? 'n' : '');
+
+  if (!groups.length) {
+    var empty = mk('div', { style: 'color:var(--tx3);font-size:.76rem;text-align:center;padding:1.5rem 0;background:var(--bg3);border-radius:8px' });
+    empty.textContent = 'Noch in keiner Gruppe. Erstelle eine oder tritt einer bei.';
+    ap(list, empty);
+    return;
+  }
+
+  // Load each group and display
+  groups.forEach(function(code) {
+    var g = loadGrpLocal(code);
+    var row = mk('div', { cls: 'group-item' + (localCode === code ? ' active' : '') });
+    row.id = 'gi_' + code;
+
+    var info = mk('div', { style: 'flex:1;min-width:0' });
+    var gname = mk('div', { cls: 'group-item-name' }, g ? g.name : '(' + code + ')');
+    ap(info, gname);
+
+    var meta = mk('div', { cls: 'group-item-md' });
+    if (g && g.members && g.members[G_ME]) {
+      meta.textContent = 'Guthaben: ' + gFmt((g.members[G_ME].balance || 0));
+    } else {
+      meta.textContent = 'Code: ' + code;
+    }
+    ap(info, meta);
+    ap(row, info);
+
+    if (g && g.members && g.members[G_ME]) {
+      var bal = mk('div', { cls: 'group-item-bal' });
+      var diff = (g.members[G_ME].balance || 0) - (g.settings && g.settings.startBalance ? g.settings.startBalance : 1000);
+      bal.textContent = (diff >= 0 ? '+' : '') + gFmt(diff);
+      bal.style.color = diff >= 0 ? 'var(--win)' : 'var(--loss)';
+      ap(row, bal);
+    }
+
+    // Enter button
+    var enterBtn = mk('button', { style: 'background:var(--ac);color:#08090d;border:none;border-radius:5px;padding:.28rem .65rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif' }, 'Öffnen');
+    (function(grpCode) {
+      enterBtn.addEventListener('click', function() { enterGroup(grpCode); });
+    })(code);
+    ap(row, enterBtn);
+
+    // Leave button
+    var leaveBtn = mk('button', { style: 'background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.28rem .5rem;font-size:.68rem;cursor:pointer;font-family:DM Sans,sans-serif' }, '×');
+    leaveBtn.title = 'Verlassen';
+    (function(grpCode) {
+      leaveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (confirm('Gruppe "' + (g ? g.name : grpCode) + '" verlassen?')) {
+          leaveGroupByCode(grpCode);
+        }
+      });
+    })(code);
+    ap(row, leaveBtn);
+
+    ap(list, row);
+  });
+}
+
+function leaveGroupByCode(code) {
+  var profiles = getProfiles();
+  var profile  = profiles[G_ME];
+  if (profile) {
+    profile.groups = (profile.groups || []).filter(function(c) { return c !== code; });
+    saveProfiles(profiles);
+  }
+  if (localStorage.getItem('kap_g2_my_grp') === code) {
+    localStorage.removeItem('kap_g2_my_grp');
+  }
+  renderGroupList();
+}
+
+function enterGroup(code) {
+  localStorage.setItem('kap_g2_my_grp', code);
+
+  // Try Firebase first, then local
+  var loadFn = G_FB_URL
+    ? fbGet('groups/' + code).catch(function() { return loadGrpLocal(code); })
+    : Promise.resolve(loadGrpLocal(code));
+
+  loadFn.then(function(g) {
+    if (!g) {
+      // Group not found even in Firebase - show error
+      alert('Gruppe "' + code + '" nicht gefunden. Bitte überprüfe den Code.');
+      return;
+    }
+    // Add member if not exists
+    if (!g.members) g.members = {};
+    if (!g.members[G_ME]) {
+      g.members[G_ME] = { balance: (g.settings && g.settings.startBalance) || START_BAL, history: [] };
+    }
+    GRP = g;
+    saveGrp(GRP);
+
+    // Register group in profile
+    var profiles = getProfiles();
+    if (profiles[G_ME] && profiles[G_ME].groups.indexOf(code) < 0) {
+      profiles[G_ME].groups.push(code);
+      saveProfiles(profiles);
+    }
+
+    showGroupMain();
+  });
+}
+
+function showCreateGroup() {
+  el('gsCreateForm').style.display = 'block';
+  el('gsJoinForm').style.display   = 'none';
+}
+function showJoinGroup() {
+  el('gsJoinForm').style.display   = 'block';
+  el('gsCreateForm').style.display = 'none';
+}
+
+
+
+// ════════════════════════════════════════════════════════
 // GRUPPENLIGA – Firebase Realtime Database
 // Remote-Multiplayer: alle Daten live synchronisiert
 // ════════════════════════════════════════════════════════
@@ -2448,43 +2832,53 @@ function gFmt(n) {
 // ── Init ─────────────────────────────────────────────────
 function initGroupTab() {
   loadSavedFbUrl();
-  var code = localStorage.getItem('kap_g2_my_grp');
-  var name = localStorage.getItem('kap_g2_my_name');
-  if (code && name) {
-    // Try Firebase first, fallback to local
-    if (G_FB_URL) {
-      fbGet('groups/' + code).then(function(data) {
-        if (data && data.members && data.members[name] !== undefined) {
-          GRP = data; G_ME = name;
-          saveGrpLocal(GRP);
-          showGroupMain();
-        } else {
-          // Not in Firebase group – check local
-          var local = loadGrpLocal(code);
-          if (local && local.members && local.members[name] !== undefined) {
-            GRP = local; G_ME = name;
-            saveGrp(GRP); // push local to Firebase
-            showGroupMain();
-          } else {
-            showGroupSetup();
-          }
-        }
-      }).catch(function() {
-        var local = loadGrpLocal(code);
-        if (local && local.members && local.members[name] !== undefined) {
-          GRP = local; G_ME = name;
-          showGroupMain();
-        } else { showGroupSetup(); }
-      });
-    } else {
-      var local = loadGrpLocal(code);
-      if (local && local.members && local.members[name] !== undefined) {
-        GRP = local; G_ME = name;
-        showGroupMain();
-      } else { showGroupSetup(); }
-    }
-  } else {
+
+  // Check if user is logged in
+  var session = getSession();
+  if (!session || !session.name) {
+    // Not logged in – show login screen
     showGroupSetup();
+    el('gsLogin').style.display  = 'block';
+    el('gsGroups').style.display = 'none';
+    return;
+  }
+
+  G_ME = session.name;
+  localStorage.setItem('kap_g2_my_name', G_ME);
+
+  // Check if user was in a group
+  var code = localStorage.getItem('kap_g2_my_grp');
+  if (code) {
+    // Re-enter last group automatically
+    var loadFn = G_FB_URL
+      ? fbGet('groups/' + code).catch(function() { return loadGrpLocal(code); })
+      : Promise.resolve(loadGrpLocal(code));
+
+    loadFn.then(function(g) {
+      if (g && g.members) {
+        GRP = g; G_ME = session.name;
+        if (!GRP.members[G_ME]) GRP.members[G_ME] = { balance: START_BAL, history: [] };
+        saveGrpLocal(GRP);
+        showGroupMain();
+      } else {
+        // Group gone – show groups screen
+        showGroupSetup();
+        showGroupsScreen();
+      }
+    }).catch(function() {
+      var local = loadGrpLocal(code);
+      if (local && local.members) {
+        GRP = local; G_ME = session.name;
+        showGroupMain();
+      } else {
+        showGroupSetup();
+        showGroupsScreen();
+      }
+    });
+  } else {
+    // Logged in but no active group – show group list
+    showGroupSetup();
+    showGroupsScreen();
   }
 }
 
@@ -2492,6 +2886,9 @@ function showGroupSetup() {
   el('groupSetup').style.display = 'block';
   el('groupMain').style.display  = 'none';
   loadSavedFbUrl();
+  // Default: show login screen
+  if (el('gsLogin'))  el('gsLogin').style.display  = 'block';
+  if (el('gsGroups')) el('gsGroups').style.display = 'none';
 }
 
 // ── Create / Join ─────────────────────────────────────────
@@ -2521,13 +2918,22 @@ function createGroup() {
     });
   }
   saveGrpLocal(g);
-  localStorage.setItem('kap_g2_my_grp',  code);
-  localStorage.setItem('kap_g2_my_name', name);
+  localStorage.setItem('kap_g2_my_grp', code);
+
+  // Register group in profile
+  var profiles = getProfiles();
+  if (profiles[G_ME] && profiles[G_ME].groups.indexOf(code) < 0) {
+    profiles[G_ME].groups.push(code);
+    saveProfiles(profiles);
+  }
+
+  el('gsCreateForm').style.display = 'none';
+  if (el('gNewName')) el('gNewName').value = '';
   showGroupMain();
 }
 
 function joinGroup() {
-  var name = el('gMyName').value.trim();
+  var name = G_ME || (el('gMyName') && el('gMyName').value.trim()) || '';
   var code = el('gJoinCode').value.trim().toUpperCase();
   if (!name || !code) { alert('Bitte Name und Code eingeben.'); return; }
 
@@ -2552,8 +2958,18 @@ function joinGroup() {
     GRP  = g;
     G_ME = name;
     saveGrp(g);
-    localStorage.setItem('kap_g2_my_grp',  code);
+    localStorage.setItem('kap_g2_my_grp', code);
     localStorage.setItem('kap_g2_my_name', name);
+
+    // Register group in profile
+    var profiles = getProfiles();
+    if (profiles[name] && profiles[name].groups.indexOf(code) < 0) {
+      profiles[name].groups.push(code);
+      saveProfiles(profiles);
+    }
+
+    el('gsJoinForm').style.display = 'none';
+    if (el('gJoinCode')) el('gJoinCode').value = '';
     showGroupMain();
   }
 
@@ -2593,13 +3009,17 @@ function joinGroup() {
 }
 
 function leaveGroup() {
-  if (!confirm('Gruppe verlassen?')) return;
-  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
-  stopCountdownTimer();
+  if (!confirm('Gruppe verlassen?\nDeine Scheine bleiben erhalten.')) return;
+  var code = GRP ? GRP.code : null;
+  if (code) leaveGroupByCode(code);
   localStorage.removeItem('kap_g2_my_grp');
-  localStorage.removeItem('kap_g2_my_name');
-  GRP = null; G_ME = null; G_SLIP = [];
-  showGroupSetup();
+  GRP = null; G_SLIP = [];
+  stopCountdownTimer();
+  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+  if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
+  el('groupMain').style.display  = 'none';
+  el('groupSetup').style.display = 'block';
+  showGroupsScreen();
 }
 
 function copyGroupCode() {
