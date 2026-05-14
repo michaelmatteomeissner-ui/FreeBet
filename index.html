@@ -2,15 +2,23 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FreeBet">
+<meta name="theme-color" content="#08090d">
+<meta name="application-name" content="FreeBet">
 <title>FreeBet – Bundesliga</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;FreeBet&quot;,&quot;short_name&quot;:&quot;FreeBet&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2308090d&quot;,&quot;theme_color&quot;:&quot;%2308090d&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e8ff47'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%2308090d' stroke-width='5'/%3E%3Cpath d='M50 20a30 30 0 0 1 20 50 30 30 0 0 1-40 0 30 30 0 0 1 20-50z' fill='none' stroke='%2308090d' stroke-width='4'/%3E%3Cline x1='20' y1='50' x2='80' y2='50' stroke='%2308090d' stroke-width='4'/%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#08090d;--bg2:#0f1117;--bg3:#161920;--bg4:#1c2028;--bo:rgba(255,255,255,.07);--bo2:rgba(255,255,255,.13);--ac:#e8ff47;--blue:#47c8ff;--tx:#eef0f5;--tx2:#8892a4;--tx3:#4a5468;--win:#3ddc84;--draw:#ffb347;--loss:#ff5a5a}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh;min-height:-webkit-fill-available}
+html{height:-webkit-fill-available}
 
-header{background:rgba(8,9,13,.95);border-bottom:1px solid var(--bo);padding:0 1.5rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+header{background:rgba(8,9,13,.95);border-bottom:1px solid var(--bo);padding:0 1.5rem;padding-top:env(safe-area-inset-top);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
 .hdr{max-width:1300px;margin:0 auto;display:flex;align-items:center;height:58px;gap:1rem}
 .logo{display:flex;align-items:center;gap:9px}
 .logo-ball{width:32px;height:32px;background:var(--ac);border-radius:7px;display:grid;place-items:center}
@@ -27,7 +35,7 @@ header{background:rgba(8,9,13,.95);border-bottom:1px solid var(--bo);padding:0 1
 .ref-btn.spin svg{animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-.page{max-width:1300px;margin:0 auto;padding:1.25rem 1.5rem}
+.page{max-width:1300px;margin:0 auto;padding:1.25rem 1.5rem;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom))}
 
 .stats{display:flex;gap:.7rem;margin-bottom:1.1rem;overflow-x:auto}
 .sc{background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:.7rem 1rem;flex-shrink:0;min-width:118px}
