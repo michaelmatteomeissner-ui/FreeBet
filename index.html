@@ -121,11 +121,15 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 .btn-ac{background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.55rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.75rem;width:100%;margin-top:.8rem;transition:.15s}
 .btn-ac:hover{background:#d4e640}
 
-.tbl-wrap{overflow-x:auto}
-.bl-tbl{width:100%;border-collapse:collapse;font-size:.77rem}
-.bl-tbl th{padding:.4rem .62rem;text-align:left;font-size:.61rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);border-bottom:1px solid var(--bo);font-weight:600}
-.bl-tbl td{padding:.56rem .62rem;border-bottom:1px solid rgba(255,255,255,.03)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bl-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.77rem}
+.bl-tbl th{padding:.4rem .62rem;text-align:left;font-size:.61rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);border-bottom:1px solid var(--bo);font-weight:600;background:var(--bg2);white-space:nowrap}
+.bl-tbl td{padding:.56rem .62rem;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
 .bl-tbl tr:hover td{background:var(--bg3)}
+.tbl-sticky{position:sticky;left:0;background:var(--bg2);z-index:1}
+.tbl-sticky.rk{left:0;min-width:28px}
+.tbl-team{left:28px !important;min-width:120px}
+.bl-tbl tr:hover .tbl-sticky{background:var(--bg3)}
 .rk{font-family:'DM Mono',monospace;color:var(--tx3);width:22px}
 .tcell{display:flex;align-items:center;gap:.48rem}
 .tc{width:18px;height:18px;object-fit:contain}
@@ -455,16 +459,18 @@ nav button.active{background:var(--bg4);color:var(--ac)}
   .btn-ac{padding:.48rem;font-size:.72rem;margin-top:.65rem;border-radius:6px}
 
   /* ── TABLE ── */
-  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .bl-tbl{font-size:.66rem;min-width:420px}
-  .bl-tbl th{padding:.32rem .38rem;font-size:.57rem}
-  .bl-tbl td{padding:.46rem .38rem}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -.6rem;padding:0 .6rem}
+  .bl-tbl{font-size:.72rem;width:100%}
+  .bl-tbl th{padding:.32rem .45rem;font-size:.6rem}
+  .bl-tbl td{padding:.48rem .45rem}
+  .tbl-hide{display:none}
   .tcell{gap:.3rem}
-  .tc{width:14px;height:14px}
-  .pts{font-size:.78rem}
+  .tbl-team{min-width:110px !important;max-width:130px}
+  .tc{width:15px;height:15px}
+  .pts{font-size:.82rem}
   .fmini{gap:2px}
-  .fm{width:10px;height:10px;font-size:.4rem;border-radius:1px}
-  .rk{width:18px;font-size:.66rem}
+  .fm{width:11px;height:11px;font-size:.42rem;border-radius:1px}
+  .rk{width:20px;font-size:.68rem;min-width:20px !important}
 
   /* ── SLIP / TRACKER ── */
   .slip-match-row{padding:.5rem .65rem;border-radius:7px;margin-bottom:.38rem}
@@ -625,7 +631,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
         <div class="sec"><h2>TABELLE <span id="tblSeason"></span></h2><div class="sec-line"></div></div>
         <div class="tbl-wrap">
           <table class="bl-tbl">
-            <thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>±</th><th style="color:var(--ac)">Pts</th><th>Form</th></tr></thead>
+            <thead><tr><th class="tbl-sticky">#</th><th class="tbl-sticky tbl-team">Verein</th><th class="tbl-hide">Sp</th><th class="tbl-hide">S</th><th class="tbl-hide">U</th><th class="tbl-hide">N</th><th>Tore</th><th>±</th><th style="color:var(--ac)">Pts</th><th>Form</th></tr></thead>
             <tbody id="tblBody"><tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--tx3)">Wird geladen…</td></tr></tbody>
           </table>
         </div>
@@ -1713,7 +1719,7 @@ function renderTable() {
     else if (rank <= 6) tr.className = 'uel';
     else if (rank >= 16) tr.className = 'rel';
 
-    var td1 = mk('td', { cls: 'rk' }, String(rank)); ap(tr, td1);
+    var td1 = mk('td', { cls: 'rk tbl-sticky' }, String(rank)); ap(tr, td1);
 
     var td2 = mk('td');
     var tcell = mk('div', { cls: 'tcell' });
@@ -1729,9 +1735,9 @@ function renderTable() {
       ap(tcell, ci);
     }
     ap(tcell, mk('span', {}, t.teamName));
-    ap(td2, tcell); ap(tr, td2);
+    td2.className = 'tbl-sticky tbl-team'; ap(td2, tcell); ap(tr, td2);
 
-    [t.matches, t.won, t.draw, t.lost].forEach(function(v) { ap(tr, mk('td', {}, String(v||0))); });
+    [t.matches, t.won, t.draw, t.lost].forEach(function(v) { ap(tr, mk('td', { cls: 'tbl-hide' }, String(v||0))); });
     ap(tr, mk('td', {}, (t.goals||0) + ':' + (t.opponentGoals||0)));
     var td3 = mk('td', {}, (diff>=0?'+':'')+diff);
     td3.style.color = diff>0?'var(--win)':diff<0?'var(--loss)':'var(--tx2)';
