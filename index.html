@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https: data: blob:; worker-src blob: 'self'">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,7 +11,73 @@
 <meta name="theme-color" content="#08090d">
 <meta name="application-name" content="FreeBet">
 <title>FreeBet – Bundesliga</title>
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;FreeBet&quot;,&quot;short_name&quot;:&quot;FreeBet&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2308090d&quot;,&quot;theme_color&quot;:&quot;%2308090d&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e8ff47'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%2308090d' stroke-width='5'/%3E%3Cpath d='M50 20a30 30 0 0 1 20 50 30 30 0 0 1-40 0 30 30 0 0 1 20-50z' fill='none' stroke='%2308090d' stroke-width='4'/%3E%3Cline x1='20' y1='50' x2='80' y2='50' stroke='%2308090d' stroke-width='4'/%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+
+<!-- Firebase SDK (compat version, works without bundler) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCvMkNWd6pNIaaGIuNhDP0ZI7tN2ZCt3Z0",
+  authDomain: "freebet-1.firebaseapp.com",
+  databaseURL: "https://freebet-1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "freebet-1",
+  storageBucket: "freebet-1.firebasestorage.app",
+  messagingSenderId: "77961459240",
+  appId: "1:77961459240:web:f15d63796da86110f2e71d"
+};
+firebase.initializeApp(firebaseConfig);
+var fbAuth = firebase.auth();
+var fbDb   = firebase.database();
+fbAuth.languageCode = 'de';
+</script>
+<script>
+// Service Worker – inline als Blob (funktioniert auch ohne sw.js Datei)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    // Versuche zuerst externe sw.js (GitHub Pages / lokaler Server)
+    // Falle zurück auf Blob-URL wenn 404
+    function registerSW(url) {
+      return navigator.serviceWorker.register(url).then(function(reg) {
+        setInterval(function() { reg.update(); }, 60 * 60 * 1000);
+        reg.addEventListener('updatefound', function() {
+          var nw = reg.installing;
+          nw.addEventListener('statechange', function() {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage({ action: 'skipWaiting' });
+            }
+          });
+        });
+        return reg;
+      });
+    }
+
+    var swCode = [
+      "const CACHE='freebet-1.0.1';",
+      "self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/']))));",
+      "self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));",
+      "self.addEventListener('fetch',e=>{if(!e.request.url.startsWith(self.location.origin))return;e.respondWith(fetch(e.request).then(r=>{var c=r.clone();caches.open(CACHE).then(ch=>ch.put(e.request,c));return r;}).catch(()=>caches.match(e.request)));});",
+      "self.addEventListener('message',e=>{if(e.data&&e.data.action==='skipWaiting')self.skipWaiting();});"
+    ].join('
+');
+
+    var blob = new Blob([swCode], { type: 'application/javascript' });
+    var blobUrl = URL.createObjectURL(blob);
+
+    // Try external sw.js first (for GitHub Pages where sw.js is deployed)
+    var swPath = location.pathname.replace(/[^/]*$/, '') + 'sw.js';
+    registerSW(swPath).catch(function() {
+      // Fallback: blob URL (Netlify single-file or local)
+      return registerSW(blobUrl);
+    }).catch(function() {});
+
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      window.location.reload();
+    });
+  });
+}
+</script>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22FreeBet%22%2C%22short_name%22%3A%22FreeBet%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2308090d%22%2C%22theme_color%22%3A%22%2308090d%22%2C%22start_url%22%3A%22.%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjZThmZjQ3Ii8%2BCiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMzAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzA4MDkwZCIgc3Ryb2tlLXdpZHRoPSI1Ii8%2BCiAgPHBhdGggZD0iTTUwIDIwYTMwIDMwIDAgMCAxIDIwIDUwIDMwIDMwIDAgMCAxLTQwIDAgMzAgMzAgMCAwIDEgMjAtNTB6IiBmaWxsPSJub25lIiBzdHJva2U9IiMwODA5MGQiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxsaW5lIHgxPSIyMCIgeTE9IjUwIiB4Mj0iODAiIHkyPSI1MCIgc3Ryb2tlPSIjMDgwOTBkIiBzdHJva2Utd2lkdGg9IjQiLz4KPC9zdmc%2B%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#08090d;--bg2:#0f1117;--bg3:#161920;--bg4:#1c2028;--bo:rgba(255,255,255,.07);--bo2:rgba(255,255,255,.13);--ac:#e8ff47;--blue:#47c8ff;--tx:#eef0f5;--tx2:#8892a4;--tx3:#4a5468;--win:#3ddc84;--draw:#ffb347;--loss:#ff5a5a}
@@ -326,6 +393,79 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 .admin-badge{background:rgba(232,255,71,.12);color:var(--ac);font-size:.6rem;padding:1px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-weight:600}
 
 
+
+/* ── LIGA-DROPDOWN ── */
+.league-select{position:relative;display:inline-flex;align-items:center}
+.league-btn{display:flex;align-items:center;gap:.45rem;background:var(--bg3);border:1px solid var(--bo);border-radius:7px;padding:.3rem .7rem .3rem .55rem;cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--tx);min-width:140px}
+.league-btn:hover{border-color:var(--bo2)}
+.league-btn-dot{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center}
+.league-btn-dot img,.league-btn-dot svg{width:20px;height:20px}
+.league-btn-name{flex:1;font-weight:500}
+.league-btn-arr{font-size:.6rem;color:var(--tx3);transition:.2s}
+.league-btn.open .league-btn-arr{transform:rotate(180deg)}
+.league-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--bg2);border:1px solid var(--bo2);border-radius:9px;overflow:hidden;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:200px;display:none}
+.league-dropdown.open{display:block;animation:fup .15s ease}
+.league-option{display:flex;align-items:center;gap:.55rem;padding:.6rem .85rem;cursor:pointer;transition:.12s;font-size:.78rem;border-bottom:1px solid var(--bo)}
+.league-option:last-child{border-bottom:none}
+.league-option:hover{background:var(--bg3)}
+.league-option.active{background:rgba(232,255,71,.07)}
+.league-option-dot{width:20px;height:20px;flex-shrink:0}
+.league-option-dot img{width:20px;height:20px}
+.league-option-name{flex:1;font-weight:500}
+.league-option-badge{font-size:.6rem;font-family:'DM Mono',monospace;padding:1px 5px;border-radius:3px;background:var(--bg3);color:var(--tx3)}
+.league-option.active .league-option-badge{background:rgba(232,255,71,.15);color:var(--ac)}
+
+
+/* ── KOMPAKTE WETT-KARTE (Gruppe + Tracker) ── */
+.gmc{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;overflow:hidden;margin-bottom:.5rem;transition:.15s}
+.gmc:hover{border-color:var(--bo2)}
+.gmc-in-slip{border-color:rgba(232,255,71,.35);background:rgba(232,255,71,.03)}
+.gmc-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.65rem .75rem;gap:.4rem}
+.gmc-team{display:flex;align-items:center;gap:.4rem;min-width:0}
+.gmc-team.r{flex-direction:row-reverse}
+.gmc-flag{width:34px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.gmc-flag img{max-width:34px;max-height:26px;width:auto;height:auto;object-fit:contain;border-radius:2px}
+.gmc-flag-fb{width:28px;height:28px;border-radius:4px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--tx2);flex-shrink:0;border:1px solid var(--bo)}
+.gmc-name{font-size:.74rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gmc-team.r .gmc-name{text-align:right}
+.gmc-mid{text-align:center;flex-shrink:0}
+.gmc-time{font-size:.56rem;color:var(--tx3);white-space:nowrap;margin-bottom:1px}
+.gmc-vs{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--tx2);letter-spacing:1px}
+.gmc-score{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:var(--ac);letter-spacing:1px}
+.gmc-date{font-size:.52rem;color:var(--tx3);white-space:nowrap}
+/* Primary odds row: 3 buttons */
+.gmc-odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 .6rem .6rem}
+.gmc-odd-btn{display:flex;flex-direction:column;align-items:center;padding:.38rem .3rem;border-radius:6px;border:1px solid var(--bo);background:var(--bg3);cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif}
+.gmc-odd-btn:hover{border-color:rgba(232,255,71,.3);background:rgba(232,255,71,.05)}
+.gmc-odd-btn.sel{border-color:var(--ac);background:rgba(232,255,71,.12)}
+.gmc-odd-lbl{font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.gmc-odd-val{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--ac);line-height:1}
+.gmc-odd-btn.sel .gmc-odd-val{color:#08090d}
+/* Expand row */
+.gmc-expand{display:flex;align-items:center;justify-content:space-between;padding:.2rem .75rem .45rem;gap:.4rem}
+.gmc-expand-btn{display:flex;align-items:center;gap:.28rem;background:none;border:none;color:var(--tx3);font-size:.64rem;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0}
+.gmc-expand-btn:hover{color:var(--tx2)}
+.gmc-expand-arr{font-size:.5rem;transition:.2s}
+.gmc-stats-btn{background:none;border:1px solid var(--bo);border-radius:5px;padding:.2rem .5rem;font-size:.62rem;color:var(--tx2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s}
+.gmc-stats-btn:hover{border-color:var(--bo2);color:var(--tx)}
+/* More tips panel */
+.gmc-more{display:none;padding:0 .6rem .6rem;display:none}
+.gmc-more.open{display:block}
+.gmc-more-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:.35rem}
+.gmc-more-grid .gmc-odd-btn{flex-direction:row;gap:.4rem;padding:.3rem .5rem;justify-content:space-between}
+.gmc-more-grid .gmc-odd-lbl{font-size:.62rem;letter-spacing:0;text-transform:none;color:var(--tx2);margin-bottom:0}
+.gmc-more-grid .gmc-odd-val{font-size:.88rem}
+/* Stats mini panel */
+.gmc-stats{display:none;padding:0 .75rem .65rem}
+.gmc-stats.open{display:block}
+.gmc-stat-row{display:flex;justify-content:space-between;align-items:center;padding:.2rem 0;font-size:.68rem;border-bottom:1px solid var(--bo)}
+.gmc-stat-row:last-child{border-bottom:none}
+.gmc-stat-lbl{color:var(--tx3);text-align:center;flex:1}
+.gmc-stat-val{font-weight:600;min-width:50px}
+.gmc-stat-val.r{text-align:right}
+.gmc-prob-bar{height:3px;background:var(--bg3);border-radius:2px;margin:.28rem 0;overflow:hidden}
+.gmc-prob-seg{height:100%;float:left}
+
 /* ── LOGIN & MULTI-GROUP ── */
 .login-card{max-width:400px;margin:2rem auto;background:var(--bg2);border:1px solid var(--bo);border-radius:14px;padding:1.75rem 1.5rem;text-align:center}
 .login-logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:var(--ac);margin-bottom:.25rem}
@@ -350,6 +490,46 @@ nav button.active{background:var(--bg4);color:var(--ac)}
 .group-item-bal{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--ac)}
 .group-item-md{font-size:.62rem;color:var(--tx3)}
 .group-actions{display:flex;gap:.45rem;flex-wrap:wrap}
+
+
+/* ── WM LAYOUT ── */
+.wm-wrap{display:block}
+.wm-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.85rem;margin-bottom:1rem}
+.wm-group-card{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;overflow:hidden;width:100%}
+.wm-group-hdr{display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;background:rgba(232,255,71,.06);border-bottom:1px solid var(--bo)}
+.wm-group-name{font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:1.5px;color:var(--ac)}
+.wm-group-teams{font-size:.6rem;color:var(--tx3);margin-left:auto}
+.wm-match-row{display:grid;grid-template-columns:1fr 60px 1fr;align-items:center;padding:.38rem .75rem;border-bottom:1px solid rgba(255,255,255,.03);gap:.5rem}
+.wm-match-row:last-child{border-bottom:none}
+.wm-match-team{display:flex;align-items:center;gap:.3rem;min-width:0}
+.wm-match-team.r{flex-direction:row-reverse}
+.wm-flag{width:24px;height:16px;flex-shrink:0;display:flex;align-items:center;overflow:hidden}
+.wm-flag img{max-width:24px;max-height:16px;width:auto;height:auto;object-fit:contain;border-radius:1px}
+.wm-flag-fb{width:18px;height:12px;border-radius:2px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.45rem;font-weight:700;flex-shrink:0}
+.wm-tname{font-size:.74rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wm-match-team.r .wm-tname{text-align:right}
+.wm-score{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:.9rem;color:var(--ac);letter-spacing:1px;flex-shrink:0;min-width:60px}
+.wm-score.pending{color:var(--tx2);font-size:.64rem;font-family:'DM Sans',sans-serif;line-height:1.3}
+/* WM Group standings mini-table */
+.wm-standing{display:grid;grid-template-columns:18px 1fr repeat(4,28px);gap:4px;align-items:center;padding:.28rem .75rem;font-size:.68rem;border-top:1px solid var(--bo)}
+.wm-standing:nth-child(even){background:rgba(255,255,255,.02)}
+.wm-standing.top3{background:rgba(71,200,255,.04)}
+.wm-st-rank{color:var(--tx3);text-align:center}
+.wm-st-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.wm-st-pts{text-align:center;font-weight:700;color:var(--ac)}
+.wm-st-val{text-align:center;color:var(--tx2)}
+/* Bracket */
+.wm-bracket{background:var(--bg2);border:1px solid var(--bo);border-radius:10px;padding:1rem;margin-top:.85rem;width:100%;box-sizing:border-box}
+.wm-bracket-title{font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:2px;color:var(--ac);margin-bottom:.85rem}
+.bracket-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.bracket-round{display:flex;flex-direction:column;gap:.5rem}
+.bracket-round-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);text-align:center;margin-bottom:.35rem}
+.bracket-match{background:var(--bg3);border:1px solid var(--bo);border-radius:6px;padding:.35rem .5rem;min-height:44px}
+.bracket-team{display:flex;align-items:center;gap:.3rem;padding:.18rem 0;font-size:.65rem}
+.bracket-team.winner{color:var(--ac);font-weight:600}
+.bracket-score{font-family:'Bebas Neue',sans-serif;font-size:.8rem;margin-left:auto;flex-shrink:0}
+.bracket-sep{height:1px;background:var(--bo);margin:.1rem 0}
+@media(max-width:700px){.wm-groups{grid-template-columns:1fr}.bracket-grid{grid-template-columns:repeat(2,1fr)}}
 
 @media(max-width:900px){
   .layout{grid-template-columns:1fr}
@@ -562,7 +742,16 @@ nav button.active{background:var(--bg4);color:var(--ac)}
       <span class="logo-txt">Free<em>Bet</em></span>
     </div>
     <div class="hdr-right">
-      <span class="live-dot">LIVE-DATEN</span>
+      <!-- Liga-Auswahl Dropdown -->
+      <div class="league-select" id="leagueSelect">
+        <div class="league-btn" id="leagueBtn" onclick="toggleLeagueDropdown()">
+          <img class="league-btn-dot" id="leagueBtnDot" src="" style="width:22px;height:22px;display:none">
+          <span class="league-btn-name" id="leagueBtnName">Bundesliga</span>
+          <span class="league-btn-arr">▼</span>
+        </div>
+        <div class="league-dropdown" id="leagueDropdown"></div>
+      </div>
+      <span class="live-dot">LIVE</span>
       <button class="ref-btn" id="refBtn" onclick="doReload()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="23 4 23 10 17 10"/>
@@ -595,7 +784,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
     <div class="layout">
       <div>
         <div class="sec">
-          <h2>BUNDESLIGA</h2>
+          <h2 id="leagueLabel">BUNDESLIGA</h2>
           <span class="badge" id="mdBadge">Spieltag –</span>
           <div class="sec-line"></div>
         </div>
@@ -628,13 +817,16 @@ nav button.active{background:var(--bg4);color:var(--ac)}
   <div id="tabTable" style="display:none">
     <div class="layout">
       <div>
-        <div class="sec"><h2>TABELLE <span id="tblSeason"></span></h2><div class="sec-line"></div></div>
-        <div class="tbl-wrap">
+        <div class="sec"><h2 id="tableSectionTitle">TABELLE <span id="tblSeason"></span></h2><div class="sec-line"></div></div>
+        <!-- Normal league table (hidden for WM) -->
+        <div class="tbl-wrap" id="tblTableWrap">
           <table class="bl-tbl">
-            <thead><tr><th class="tbl-sticky">#</th><th class="tbl-sticky tbl-team">Verein</th><th class="tbl-hide">Sp</th><th class="tbl-hide">S</th><th class="tbl-hide">U</th><th class="tbl-hide">N</th><th>Tore</th><th>±</th><th style="color:var(--ac)">Pts</th><th>Form</th></tr></thead>
-            <tbody id="tblBody"><tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--tx3)">Wird geladen…</td></tr></tbody>
+            <thead id="tblThead"><tr><th class="tbl-sticky">#</th><th class="tbl-sticky tbl-team">Verein</th><th class="tbl-hide">Sp</th><th class="tbl-hide">S</th><th class="tbl-hide">U</th><th class="tbl-hide">N</th><th>Tore</th><th>±</th><th style="color:var(--ac)">Pts</th><th>Form</th></tr></thead>
+            <tbody id="tblBody"><tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:1.5rem">Wird geladen…</td></tr></tbody>
           </table>
         </div>
+        <!-- WM / Multi content -->
+        <div id="wmContent" style="display:none"></div>
         <div style="display:flex;gap:.9rem;margin-top:.55rem;font-size:.64rem;color:var(--tx3)">
           <span><span style="display:inline-block;width:7px;height:7px;background:#1a2980;border-radius:1px;margin-right:3px"></span>Champions League</span>
           <span><span style="display:inline-block;width:7px;height:7px;background:#e86d00;border-radius:1px;margin-right:3px"></span>Europa League</span>
@@ -747,29 +939,43 @@ nav button.active{background:var(--bg4);color:var(--ac)}
           <div class="login-logo">FREE<span style="color:var(--blue)">BET</span></div>
           <div class="login-sub">Melde dich an um Gruppen beizutreten und deine Scheine zu verwalten</div>
 
-          <div style="background:var(--bg3);border-radius:8px;padding:.75rem;margin-bottom:1rem;text-align:left;border:1px solid rgba(232,255,71,.12)">
-            <div style="font-size:.68rem;font-weight:700;color:var(--ac);margin-bottom:.28rem">🔥 Firebase URL (einmalig)</div>
-            <div style="display:flex;gap:.38rem">
-              <input id="gFbUrl" class="cin" placeholder="https://...firebasedatabase.app" style="flex:1;font-size:.68rem;font-family:'DM Mono',monospace">
-              <button onclick="saveFbUrl()" style="background:var(--ac);color:#08090d;border:none;border-radius:6px;padding:.38rem .65rem;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap">OK</button>
-            </div>
-            <div id="fbStatus" style="font-size:.63rem;margin-top:.25rem;color:var(--tx3)">Nicht verbunden</div>
-            <div id="fbRulesHint" style="display:none;margin-top:.5rem;background:rgba(255,90,90,.07);border:1px solid rgba(255,90,90,.2);border-radius:6px;padding:.6rem;font-size:.67rem;color:var(--tx2);line-height:1.5">
-              <strong style="color:var(--loss)">Firebase-Regeln:</strong> console.firebase.google.com → Projekt → Realtime Database → Regeln → .read + .write auf <code style="color:var(--ac)">true</code> → Veröffentlichen
-            </div>
-          </div>
+          <!-- Firebase ist bereits konfiguriert - kein manueller URL-Eintrag nötig -->
+          <div id="fbStatus" style="display:none"></div>
+          <div id="fbRulesHint" style="display:none"></div>
 
           <div id="gsLoginForm">
-            <div class="login-field"><label>Dein Name</label><input class="cin" id="loginName" placeholder="z.B. Max" style="width:100%"></div>
-            <div class="login-field"><label>PIN (4 Ziffern)</label><input class="cin pin-input" id="loginPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
+            <div class="login-field">
+              <label>E-Mail-Adresse</label>
+              <input class="cin" id="loginEmail" type="email" placeholder="name@beispiel.de" style="width:100%" autocomplete="email">
+            </div>
+            <div class="login-field">
+              <label>Passwort</label>
+              <input class="cin" id="loginPassword" type="password" placeholder="Passwort" style="width:100%" autocomplete="current-password">
+            </div>
             <button class="login-btn" onclick="doLogin()">Anmelden</button>
+            <div style="text-align:center;margin-top:.4rem">
+              <a onclick="doForgotPassword()" style="font-size:.68rem;color:var(--tx3);cursor:pointer">Passwort vergessen?</a>
+            </div>
             <div class="login-switch">Noch kein Konto? <a onclick="showRegister()">Jetzt registrieren</a></div>
           </div>
 
           <div id="gsRegisterForm" style="display:none">
-            <div class="login-field"><label>Name (wird in Gruppen angezeigt)</label><input class="cin" id="regName" placeholder="z.B. Max" style="width:100%"></div>
-            <div class="login-field"><label>PIN wählen (4 Ziffern)</label><input class="cin pin-input" id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
-            <div class="login-field"><label>PIN bestätigen</label><input class="cin pin-input" id="regPin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="width:100%"></div>
+            <div class="login-field">
+              <label>Anzeigename (in Gruppen sichtbar)</label>
+              <input class="cin" id="regName" placeholder="z.B. Max" style="width:100%" autocomplete="username">
+            </div>
+            <div class="login-field">
+              <label>E-Mail-Adresse</label>
+              <input class="cin" id="regEmail" type="email" placeholder="name@beispiel.de" style="width:100%" autocomplete="email">
+            </div>
+            <div class="login-field">
+              <label>Passwort (mind. 6 Zeichen)</label>
+              <input class="cin" id="regPassword" type="password" placeholder="Passwort wählen" style="width:100%" autocomplete="new-password">
+            </div>
+            <div class="login-field">
+              <label>Passwort bestätigen</label>
+              <input class="cin" id="regPassword2" type="password" placeholder="Passwort wiederholen" style="width:100%" autocomplete="new-password">
+            </div>
             <button class="login-btn" onclick="doRegister()">Konto erstellen</button>
             <div class="login-switch">Bereits registriert? <a onclick="showLogin()">Anmelden</a></div>
           </div>
@@ -785,6 +991,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
             <div class="profile-avatar" id="gsAvatar">?</div>
             <div style="flex:1">
               <div class="profile-name" id="gsProfileName">–</div>
+              <div id="gsProfileEmail" style="font-size:.6rem;color:var(--tx3)"></div>
               <div class="profile-groups" id="gsProfileGroups">Keine Gruppen</div>
             </div>
             <button onclick="doLogout()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.24rem .55rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Abmelden</button>
@@ -801,6 +1008,16 @@ nav button.active{background:var(--bg4);color:var(--ac)}
           <div id="gsCreateForm" style="display:none;margin-top:.85rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1rem">
             <div style="font-size:.74rem;font-weight:600;color:var(--ac);margin-bottom:.6rem">Neue Gruppe erstellen</div>
             <div class="login-field"><label>Gruppenname</label><input class="cin" id="gNewName" placeholder="z.B. WM-Tipp-Runde" style="width:100%"></div>
+            <div class="login-field">
+              <label>Liga / Event</label>
+              <select id="gLeagueSelect" class="cin" style="width:100%">
+                <option value="bl1">🇩🇪 Bundesliga</option>
+                <option value="bl2">🇩🇪 2. Bundesliga</option>
+                <option value="wm2026">🌍 WM 2026</option>
+                <option value="multi">🌐 Alle Events (Heute)</option>
+              </select>
+            </div>
+            <div style="font-size:.67rem;color:var(--tx3);margin-top:-.3rem;margin-bottom:.6rem" id="gLeagueHint">Alle Mitglieder wetten auf denselben Liga/Event-Spielplan</div>
             <div style="display:flex;gap:.45rem">
               <button onclick="createGroup()" class="slip-submit" style="flex:1;margin-top:0">Erstellen</button>
               <button onclick="el('gsCreateForm').style.display='none'" style="background:var(--bg3);border:1px solid var(--bo);color:var(--tx2);border-radius:7px;padding:.58rem .85rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem">×</button>
@@ -1045,6 +1262,12 @@ function curSeason() {
   var d = new Date(), m = d.getMonth() + 1, y = d.getFullYear();
   return m >= 7 ? y : y - 1;
 }
+
+function isSommerpause() {
+  // Alle geladenen Spiele sind beendet = Sommerpause oder Spieltagspause
+  if (!ST.matches.length) return false;
+  return ST.matches.every(function(m) { return m.matchIsFinished; });
+}
 function seasonLbl(y) { return y + '/' + String(y + 1).slice(2); }
 
 // ── Crests ───────────────────────────────────────────────────────────────────
@@ -1068,6 +1291,23 @@ var CR = {
   'FC St. Pauli':             'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_St._Pauli_Logo.svg/120px-FC_St._Pauli_Logo.svg.png',
   '1. FSV Mainz 05':          'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/FSV_Mainz_05_Logo.png/120px-FSV_Mainz_05_Logo.png',
   'VfL Bochum 1848':          'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/VfL_Bochum_logo.svg/120px-VfL_Bochum_logo.svg.png',
+  // 2. Bundesliga
+  'DSC Arminia Bielefeld':    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Arminia_logo.svg/120px-Arminia_logo.svg.png',
+  'Arminia Bielefeld':        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Arminia_logo.svg/120px-Arminia_logo.svg.png',
+  'Hamburger SV':             'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Hamburger_SV_logo.svg/120px-Hamburger_SV_logo.svg.png',
+  'Hannover 96':              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Hannover_96_Logo.svg/120px-Hannover_96_Logo.svg.png',
+  'Karlsruher SC':            'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Karlsruher_SC_Logo_2.svg/120px-Karlsruher_SC_Logo_2.svg.png',
+  'FC Schalke 04':            'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/FC_Schalke_04_Logo.svg/120px-FC_Schalke_04_Logo.svg.png',
+  'SpVgg Greuther Fürth':     'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/SpVgg_Greuther_F%C3%BCrth_Logo.svg/120px-SpVgg_Greuther_F%C3%BCrth_Logo.svg.png',
+  'SV Darmstadt 98':          'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/SV_Darmstadt_98_Logo.svg/120px-SV_Darmstadt_98_Logo.svg.png',
+  'Fortuna Düsseldorf':       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Fortuna_D%C3%BCsseldorf.svg/120px-Fortuna_D%C3%BCsseldorf.svg.png',
+  '1. FC Kaiserslautern':     'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/1._FC_Kaiserslautern_Logo.svg/120px-1._FC_Kaiserslautern_Logo.svg.png',
+  'Eintracht Braunschweig':   'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Eintracht_Braunschweig_Logo.svg/120px-Eintracht_Braunschweig_Logo.svg.png',
+  'SSV Ulm 1846':             'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/SSV_Ulm_1846_Logo.svg/120px-SSV_Ulm_1846_Logo.svg.png',
+  'Preußen Münster':          'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Preu%C3%9Fen_M%C3%BCnster_logo.svg/120px-Preu%C3%9Fen_M%C3%BCnster_logo.svg.png',
+  'Hertha BSC':               'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Hertha_BSC_Logo_2012.svg/120px-Hertha_BSC_Logo_2012.svg.png',
+  'FC Nürnberg':              'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Logo_1_FC_Nuernberg.svg/120px-Logo_1_FC_Nuernberg.svg.png',
+  '1. FC Nürnberg':           'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Logo_1_FC_Nuernberg.svg/120px-Logo_1_FC_Nuernberg.svg.png',
 };
 var WHITE_BG_LOGOS = {};
 
@@ -1082,6 +1322,24 @@ function hasWhiteBg(name) {
 
 // ── API ──────────────────────────────────────────────────────────────────────
 var OL = 'https://api.openligadb.de';
+
+// ── Liga-Konfiguration ────────────────────────────────────────────────────────
+var LIGA_SVG = {
+  bl1:    'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE1IiBmaWxsPSIjMTExMzE4IiBzdHJva2U9IiNlOGZmNDciIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxwYXRoIGQ9Ik0xNiA0TDE5LjUgMTFIMjdMMjEgMTUuNUwyMy41IDIzTDE2IDE4LjVMOC41IDIzTDExIDE1LjVMNSAxMUgxMi41WiIgZmlsbD0iI2U4ZmY0NyIgb3BhY2l0eT0iMC45Ii8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjQiIGZpbGw9IiMwODA5MGQiLz4KPC9zdmc+',
+  bl2:    'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE1IiBmaWxsPSIjMTExMzE4IiBzdHJva2U9IiM0N2M4ZmYiIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxwYXRoIGQ9Ik0xNiA0TDE5LjUgMTFIMjdMMjEgMTUuNUwyMy41IDIzTDE2IDE4LjVMOC41IDIzTDExIDE1LjVMNSAxMUgxMi41WiIgZmlsbD0iIzQ3YzhmZiIgb3BhY2l0eT0iMC45Ii8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjQiIGZpbGw9IiMwODA5MGQiLz4KPC9zdmc+',
+  wm2026: 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE1IiBmaWxsPSIjMTExMzE4IiBzdHJva2U9IiNmZjlmNDciIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmOWY0NyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KPGVsbGlwc2UgY3g9IjE2IiBjeT0iMTYiIHJ4PSI0LjUiIHJ5PSI5IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjlmNDciIHN0cm9rZS13aWR0aD0iMSIvPgo8bGluZSB4MT0iNyIgeTE9IjE2IiB4Mj0iMjUiIHkyPSIxNiIgc3Ryb2tlPSIjZmY5ZjQ3IiBzdHJva2Utd2lkdGg9IjEiLz4KPGxpbmUgeDE9IjguNSIgeTE9IjExIiB4Mj0iMjMuNSIgeTI9IjExIiBzdHJva2U9IiNmZjlmNDciIHN0cm9rZS13aWR0aD0iMC44Ii8+CjxsaW5lIHgxPSI4LjUiIHkxPSIyMSIgeDI9IjIzLjUiIHkyPSIyMSIgc3Ryb2tlPSIjZmY5ZjQ3IiBzdHJva2Utd2lkdGg9IjAuOCIvPgo8L3N2Zz4=',
+  multi:  'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE1IiBmaWxsPSIjMTExMzE4IiBzdHJva2U9IiNjNDdhZmYiIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxjaXJjbGUgY3g9IjEwIiBjeT0iMTAiIHI9IjQiIGZpbGw9IiNlOGZmNDciLz4KPGNpcmNsZSBjeD0iMjIiIGN5PSIxMCIgcj0iNCIgZmlsbD0iIzQ3YzhmZiIvPgo8Y2lyY2xlIGN4PSIxMCIgY3k9IjIyIiByPSI0IiBmaWxsPSIjZmY5ZjQ3Ii8+CjxjaXJjbGUgY3g9IjIyIiBjeT0iMjIiIHI9IjQiIGZpbGw9IiNjNDdhZmYiLz4KPC9zdmc+',
+};
+
+var LEAGUES = [
+  { id:'bl1',    name:'Bundesliga',    short:'BL1',  color:'#e8ff47', source:'openligadb', shortcut:'bl1',  season:null, hasTable:true  },
+  { id:'bl2',    name:'2. Bundesliga', short:'BL2',  color:'#47c8ff', source:'openligadb', shortcut:'bl2',  season:null, hasTable:true  },
+  { id:'wm2026', name:'WM 2026',       short:'WM26', color:'#ff9f47', source:'openfootball',               hasTable:false },
+  { id:'multi',  name:'Alle Events',   short:'ALLE', color:'#c47aff', source:'multi',                      hasTable:false },
+];
+
+var ACTIVE_LEAGUE = LEAGUES[0]; // Standard: Bundesliga
+
 
 function apiFetch(path) {
   var base = OL + path;
@@ -1129,6 +1387,421 @@ function apiFetch(path) {
 }
 
 
+// ════════════════════════════════════════════════════════
+// MULTI-LIGA SYSTEM
+// ════════════════════════════════════════════════════════
+
+// ── WM 2026 Data (openfootball GitHub JSON) ───────────────────────────────────
+var WM_DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+
+
+// Country flag emoji URLs (flagcdn.com)
+var COUNTRY_CODES = {
+  'Mexico':'mx','South Africa':'za','South Korea':'kr','Czech Republic':'cz',
+  'Canada':'ca','Bosnia & Herzegovina':'ba','Qatar':'qa','Switzerland':'ch',
+  'Brazil':'br','Morocco':'ma','Haiti':'ht','Scotland':'gb-sct',
+  'USA':'us','Paraguay':'py','Australia':'au','Turkey':'tr',
+  'Germany':'de','Ivory Coast':'ci','Ecuador':'ec',
+  'Netherlands':'nl','Japan':'jp','Sweden':'se','Tunisia':'tn',
+  'Belgium':'be','Egypt':'eg','Iran':'ir','New Zealand':'nz',
+  'Spain':'es','Saudi Arabia':'sa','Uruguay':'uy',
+  'France':'fr','Senegal':'sn','Iraq':'iq','Norway':'no',
+  'Argentina':'ar','Algeria':'dz','Austria':'at','Jordan':'jo',
+  'Portugal':'pt','Colombia':'co',
+  'England':'gb-eng','Croatia':'hr','Ghana':'gh','Panama':'pa',
+  'Curaçao':'cw','DR Congo':'cd','Uzbekistan':'uz',
+  'Cape Verde':'cv',
+};
+function getFlagUrl(countryName) {
+  if (!countryName || typeof countryName !== 'string') return null;
+  var code = COUNTRY_CODES[countryName];
+  if (!code) return null;
+  return 'https://flagcdn.com/w40/' + code + '.png';
+}
+
+function loadWMData() {
+  return fetch(WM_DATA_URL).then(function(r) {
+    if (!r.ok) throw new Error('WM-Daten nicht verfügbar');
+    return r.json();
+  }).then(function(data) {
+    // openfootball 2026 format:
+    // { "name":"...", "matches": [ {"round":"..","date":"..","time":".. UTC-6",
+    //   "team1":"Mexico","team2":"South Africa","group":"Group A",
+    //   "score":{"ft":[1,0],"ht":[0,0]} } ] }
+    // openfootball 2026: { "name":"World Cup 2026", "matches": [...] }
+    // or { "rounds": [...] } format
+    var raw = [];
+    if (Array.isArray(data.matches)) raw = data.matches;
+    else if (Array.isArray(data.rounds)) {
+      data.rounds.forEach(function(r) { (r.matches||[]).forEach(function(m){ m.round=r.name; raw.push(m); }); });
+    } else if (Array.isArray(data)) raw = data;
+    if (!raw.length) throw new Error('WM-Daten leer oder falsches Format');
+    var matchId = 90000;
+
+    return raw.map(function(m) {
+      // Parse date+time. Time includes UTC offset e.g. "13:00 UTC-6"
+      var dtStr = null, dt = null;
+      if (m.date) {
+        var timePart = '18:00:00', utcOffset = 0;
+        if (m.time) {
+          // e.g. "13:00 UTC-6" -> parse offset, convert to UTC
+          var offM = m.time.match(/UTC([+-])(\d+)/i);
+          if (offM) utcOffset = parseInt(offM[2]) * (offM[1] === '-' ? 1 : -1);
+          var tp2 = m.time.replace(/\s+UTC[+-]\d+/i, '').trim();
+          timePart = tp2.length === 5 ? tp2 + ':00' : tp2;
+        }
+        dt = new Date(m.date + 'T' + timePart + 'Z');
+        dt = new Date(dt.getTime() + utcOffset * 3600000); // adjust to real UTC
+        dtStr = dt.toISOString();
+      }
+
+      // Score
+      var score1 = null, score2 = null, finished = false;
+      if (m.score && m.score.ft && Array.isArray(m.score.ft) && m.score.ft.length === 2) {
+        score1 = m.score.ft[0]; score2 = m.score.ft[1];
+        finished = true;
+      }
+
+      var t1 = '?', t2 = '?';
+      if (typeof m.team1 === 'string') t1 = m.team1;
+      else if (m.team1 && m.team1.name) t1 = m.team1.name;
+      else if (m.team1 && m.team1.teamName) t1 = m.team1.teamName;
+      if (typeof m.team2 === 'string') t2 = m.team2;
+      else if (m.team2 && m.team2.name) t2 = m.team2.name;
+      else if (m.team2 && m.team2.teamName) t2 = m.team2.teamName;
+
+      return {
+        matchID:         matchId++,
+        leagueMatchday:  m.round  || m.group || 'WM 2026',
+        leagueName:      '🌍 WM 2026',
+        leagueId:        'wm2026',
+        matchDateTime:   dtStr,
+        matchIsFinished: finished,
+        group:           m.group  || '',
+        ground:          m.ground || '',
+        team1: { teamId: 'wm_' + t1, teamName: t1, shortName: t1.slice(0,3).toUpperCase(), teamIconUrl: getFlagUrl(t1) },
+        team2: { teamId: 'wm_' + t2, teamName: t2, shortName: t2.slice(0,3).toUpperCase(), teamIconUrl: getFlagUrl(t2) },
+        matchResults: finished ? [{ resultTypeID: 2, pointsTeam1: score1, pointsTeam2: score2 }] : [],
+      };
+    });
+  });
+
+}
+
+// ── Load 2. Bundesliga ────────────────────────────────────────────────────────
+function loadBL2() {
+  var season = curSeason();
+  return apiFetch('/getcurrentgroup/bl2').then(function(grp) {
+    return apiFetch('/getmatchdata/bl2/' + season + '/' + grp.groupOrderID);
+  }).then(function(matches) {
+    return (matches || []).map(function(m) {
+      m.leagueId = 'bl2'; m.leagueName = '2. Bundesliga'; return m;
+    });
+  });
+}
+
+// ── Filter matches: today or next upcoming ────────────────────────────────────
+function filterTodayOrNext(allMatches) {
+  var now   = new Date();
+  var today = new Date(now); today.setHours(0,0,0,0);
+  var tmrw  = new Date(today); tmrw.setDate(tmrw.getDate() + 1);
+
+  // Today's matches
+  var todayMatches = allMatches.filter(function(m) {
+    if (!m.matchDateTime) return false;
+    var d = new Date(m.matchDateTime); d.setHours(0,0,0,0);
+    return d.getTime() === today.getTime();
+  });
+  if (todayMatches.length) return todayMatches;
+
+  // No games today – find next upcoming
+  var upcoming = allMatches.filter(function(m) {
+    return !m.matchIsFinished && m.matchDateTime && new Date(m.matchDateTime) > now;
+  });
+  if (!upcoming.length) return [];
+
+  upcoming.sort(function(a,b) { return new Date(a.matchDateTime) - new Date(b.matchDateTime); });
+  var nextDate = new Date(upcoming[0].matchDateTime); nextDate.setHours(0,0,0,0);
+  return upcoming.filter(function(m) {
+    var d = new Date(m.matchDateTime); d.setHours(0,0,0,0);
+    return d.getTime() === nextDate.getTime();
+  });
+}
+
+// ── Dropdown UI ───────────────────────────────────────────────────────────────
+function renderLeagueDropdown() {
+  var dropdown = el('leagueDropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = '';
+
+  LEAGUES.forEach(function(lg) {
+    var opt = mk('div', { cls: 'league-option' + (lg.id === ACTIVE_LEAGUE.id ? ' active' : '') });
+    var dot = mk('div', { cls: 'league-option-dot' });
+    dot.style.cssText = 'width:22px;height:22px;flex-shrink:0;display:flex;align-items:center';
+    if (LIGA_SVG[lg.id]) {
+      var optImg = mk('img', { style: 'width:22px;height:22px;display:block', src: LIGA_SVG[lg.id] });
+      ap(dot, optImg);
+    } else {
+      dot.style.width = '8px';
+      dot.style.height = '8px';
+      dot.style.background = lg.color;
+      dot.style.borderRadius = '50%';
+    }
+    ap(opt, dot);
+    ap(opt, mk('span', { cls: 'league-option-name' }, lg.name));
+    var badge = mk('span', { cls: 'league-option-badge' }, lg.id === ACTIVE_LEAGUE.id ? 'AKTIV' : lg.short);
+    ap(opt, badge);
+    (function(league) {
+      opt.addEventListener('click', function() {
+        switchLeague(league);
+      });
+    })(lg);
+    ap(dropdown, opt);
+  });
+}
+
+function toggleLeagueDropdown() {
+  var btn      = el('leagueBtn');
+  var dropdown = el('leagueDropdown');
+  if (!btn || !dropdown) return;
+  var isOpen = dropdown.classList.contains('open');
+  if (isOpen) {
+    dropdown.classList.remove('open');
+    btn.classList.remove('open');
+  } else {
+    renderLeagueDropdown();
+    dropdown.classList.add('open');
+    btn.classList.add('open');
+    // Close on outside click
+    setTimeout(function() {
+      document.addEventListener('click', function closeDD(e) {
+        if (!el('leagueSelect').contains(e.target)) {
+          dropdown.classList.remove('open');
+          btn.classList.remove('open');
+          document.removeEventListener('click', closeDD);
+        }
+      });
+    }, 10);
+  }
+}
+
+function updateLeagueBtn() {
+  var dot   = el('leagueBtnDot');
+  var name  = el('leagueBtnName');
+  var label = el('leagueLabel');
+  if (dot)   dot.style.background = ACTIVE_LEAGUE.color;
+  if (name)  name.textContent     = ACTIVE_LEAGUE.name;
+  if (label) {
+    label.textContent = ACTIVE_LEAGUE.name.replace(/^[^a-zA-Z0-9]+/, '').toUpperCase();
+    label.style.color = ACTIVE_LEAGUE.color;
+  }
+}
+
+function switchLeague(league) {
+  ACTIVE_LEAGUE = league;
+  try { localStorage.setItem('fb_active_league', league.id); } catch(_) {}
+  var dropdown = el('leagueDropdown');
+  var btn      = el('leagueBtn');
+  if (dropdown) dropdown.classList.remove('open');
+  if (btn)      btn.classList.remove('open');
+  updateLeagueBtn();
+  updateNavForLeague(league);
+
+  // If group tab is currently open: reset group state for new league
+  var groupMain = el('groupMain');
+  if (groupMain && groupMain.style.display !== 'none') {
+    // Leave current group context, re-init for new league
+    GRP = null; G_SLIP = [];
+    stopCountdownTimer();
+    if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+    if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
+    groupMain.style.display = 'none';
+    el('groupSetup').style.display = 'block';
+    initGroupTab();
+  }
+
+  doReload();
+}
+
+function updateNavForLeague(league) {
+  // Change "Tabelle" nav label to "Spielplan" for non-table leagues
+  var tblBtn = document.querySelector('[onclick*="table"]');
+  if (tblBtn) tblBtn.textContent = league.hasTable ? '📊 Tabelle' : '📋 Spielplan';
+}
+
+function loadSavedLeague() {
+  var saved = localStorage.getItem('fb_active_league');
+  if (saved) {
+    var found = LEAGUES.find(function(l) { return l.id === saved; });
+    if (found) ACTIVE_LEAGUE = found;
+  }
+  updateLeagueBtn();
+  updateNavForLeague(ACTIVE_LEAGUE);
+}
+
+// ── Main load function (replaces loadBL) ─────────────────────────────────────
+function loadCurrentLeague() {
+  var lg = ACTIVE_LEAGUE;
+
+  if (lg.source === 'openligadb') {
+    return loadOLLeague(lg);
+  } else if (lg.source === 'openfootball') {
+    return loadWM2026();
+  } else if (lg.source === 'multi') {
+    return loadMultiLeague();
+  }
+  return Promise.reject(new Error('Unbekannte Datenquelle'));
+}
+
+function loadOLLeague(lg) {
+  var shortcut = lg.shortcut;
+  var season   = curSeason();
+  ST.curSeason = season;
+  var label    = seasonLbl(season);
+
+  if (el('stLbl'))     el('stLbl').textContent     = '▲ Saison ' + label;
+  if (el('tblSeason')) el('tblSeason').textContent = label;
+
+  return apiFetch('/getcurrentgroup/' + shortcut).then(function(grp) {
+    var md = grp.groupOrderID;
+    ST.curMD = md;
+    if (el('stMd'))     el('stMd').textContent     = md;
+    if (el('stSeason')) el('stSeason').textContent = 'Saison ' + label;
+    if (el('mdBadge'))  el('mdBadge').textContent  = lg.short + ' · Spieltag ' + md;
+
+    return apiFetch('/getmatchdata/' + shortcut + '/' + season + '/' + md).catch(function() { return []; });
+  }).then(function(cur) {
+    if (!cur.length) throw new Error('Keine Spiele');
+    var curUp = cur.filter(function(m) { return !m.matchIsFinished; });
+    ST.matchesCur = curUp.length ? curUp : cur;
+    ST.matches    = ST.matchesCur;
+    if (el('stTotal')) el('stTotal').textContent = ST.matchesCur.length;
+
+    // Load table async
+    if (lg.hasTable) {
+      apiFetch('/getbltable/' + shortcut + '/' + season).then(function(data) {
+        ST.table = data || [];
+        renderTable();
+      }).catch(function() {});
+    } else {
+      ST.table = [];
+    }
+  });
+}
+
+function loadWM2026() {
+  ST.curMD     = 'WM';
+  ST.curSeason = 2026;
+  if (el('stMd'))     el('stMd').textContent     = 'WM';
+  if (el('stSeason')) el('stSeason').textContent = 'WM 2026';
+  if (el('mdBadge'))  el('mdBadge').textContent  = 'WM 2026';
+  if (el('stLbl'))    el('stLbl').textContent     = '🌍 WM 2026';
+  ST.table = [];
+
+  return loadWMData().then(function(matches) {
+    var upcoming = matches.filter(function(m) { return !m.matchIsFinished; });
+    upcoming.sort(function(a,b) { return new Date(a.matchDateTime||0) - new Date(b.matchDateTime||0); });
+    // Filter out TBD placeholder games (no real teams yet)
+    var realMatches = matches.filter(function(m) {
+      var t1 = m.team1 ? m.team1.teamName : '';
+      var t2 = m.team2 ? m.team2.teamName : '';
+      // Only filter out placeholder names (KO phase TBDs)
+      // Group stage teams all have real names
+      if (!t1 || !t2 || t1 === '?' || t2 === '?') return false;
+      // Filter KO placeholders: "winner of X", "loser of X", "Path X winner" etc.
+      var koPlaceholder = /winner|loser|path|qualifier|best third/i;
+      return !koPlaceholder.test(t1) && !koPlaceholder.test(t2);
+    });
+    var realUpcoming = realMatches.filter(function(m) { return !m.matchIsFinished; });
+    realUpcoming.sort(function(a,b){ return new Date(a.matchDateTime||0)-new Date(b.matchDateTime||0); });
+    // WM Gruppenspieltage:
+    // Spieltag 1: 11-16 Juni | Spieltag 2: 17-23 Juni | Spieltag 3: 24-28 Juni
+    // WM 2026 Gruppenspieltage (alle Zeiten UTC):
+    // Spieltag 1: 11.-18. Juni, letztes Spiel 18.06 04:00 MESZ = 02:00 UTC
+    // Spieltag 2: 18.-24. Juni, erstes Spiel 18.06 18:00 MESZ = 16:00 UTC
+    //             letztes Spiel: 24.06 04:00 MESZ = 02:00 UTC
+    // Spieltag 3: 24.-27. Juni, ab 18.06 18:00 MESZ = 16:00 UTC
+    var wmMatchdays = [
+      { name:'Spieltag 1', start: new Date('2026-06-11T00:00:00Z'), end: new Date('2026-06-18T08:59:59Z') },
+      { name:'Spieltag 2', start: new Date('2026-06-18T09:00:00Z'), end: new Date('2026-06-24T08:59:59Z') },
+      { name:'Spieltag 3', start: new Date('2026-06-24T09:00:00Z'), end: new Date('2026-06-27T23:59:59Z') },
+    ];
+    var now2 = new Date();
+    var curWmMd = null;
+    for (var wmi=0; wmi<wmMatchdays.length; wmi++) {
+      var wmd = wmMatchdays[wmi];
+      // Current matchday: started but not finished yet, OR next upcoming
+      if (now2 <= wmd.end) { curWmMd = wmd; break; }
+    }
+    var forTracker;
+    if (curWmMd) {
+      forTracker = realUpcoming.filter(function(m2) {
+        if (!m2.matchDateTime) return false;
+        var d2 = new Date(m2.matchDateTime);
+        return d2 >= curWmMd.start && d2 <= curWmMd.end;
+      });
+      ST.curMD = curWmMd.name;
+      if (el('stMd')) el('stMd').textContent = curWmMd.name;
+      if (el('mdBadge')) el('mdBadge').textContent = 'WM 2026 · ' + curWmMd.name;
+    }
+    if (!forTracker || !forTracker.length) forTracker = realUpcoming.slice(0, 24);
+    ST.matches    = forTracker;
+    ST.matchesCur = forTracker;
+    if (el('stTotal')) el('stTotal').textContent = forTracker.length;
+    // Hide BL table header, show WM content
+    var twrap = el('tblTableWrap');
+    var wmDiv3 = el('wmContent');
+    if (twrap) twrap.style.display = 'none';
+    if (wmDiv3) wmDiv3.style.display = 'block';
+    // Render Spielplan in table tab
+    window._wmAllMatches = realMatches;
+    setTimeout(renderTable, 100);
+  });
+}
+
+function loadMultiLeague() {
+  ST.curMD     = 'TODAY';
+  ST.curSeason = new Date().getFullYear();
+  if (el('stMd'))     el('stMd').textContent     = new Date().toLocaleDateString('de-DE', { day:'numeric', month:'short' });
+  if (el('stSeason')) el('stSeason').textContent = 'Alle Events';
+  if (el('mdBadge'))  el('mdBadge').textContent  = 'Alle Events – Heute';
+  if (el('stLbl'))    el('stLbl').textContent     = '🌐 Alle Events';
+  ST.table = [];
+
+  // Load all sources in parallel
+  var bl1Promise  = loadOLMatches('bl1').catch(function() { return []; });
+  var bl2Promise  = loadOLMatches('bl2').catch(function() { return []; });
+  var wmPromise   = loadWMData().catch(function() { return []; });
+
+  return Promise.all([bl1Promise, bl2Promise, wmPromise]).then(function(results) {
+    var allMatches = results[0].concat(results[1]).concat(results[2]);
+    // Filter to today or next upcoming across all leagues
+    var filtered = filterTodayOrNext(allMatches);
+    if (!filtered.length) filtered = allMatches.filter(function(m) { return !m.matchIsFinished; }).slice(0, 18);
+    filtered.sort(function(a,b) { return new Date(a.matchDateTime||0) - new Date(b.matchDateTime||0); });
+    ST.matches    = filtered;
+    ST.matchesCur = filtered;
+    if (el('stTotal')) el('stTotal').textContent = filtered.length;
+  });
+}
+
+function loadOLMatches(shortcut) {
+  var season = curSeason();
+  return apiFetch('/getcurrentgroup/' + shortcut).then(function(grp) {
+    return apiFetch('/getmatchdata/' + shortcut + '/' + season + '/' + grp.groupOrderID);
+  }).then(function(matches) {
+    return (matches || []).map(function(m) {
+      m.leagueId   = shortcut;
+      m.leagueName = shortcut === 'bl1' ? '🇩🇪 Bundesliga' : '🇩🇪 2. Bundesliga';
+      return m;
+    });
+  });
+}
+
+
+
+
+function loadBL() { return loadCurrentLeague(); }
 // ── Load Data ────────────────────────────────────────────────────────────────
 function loadBL() {
   var season = curSeason();
@@ -1166,14 +1839,22 @@ function loadTable() {
 
 function doReload() {
   var btn = el('refBtn');
-  btn.classList.add('spin');
-  loadBL().then(function() {
+  if (btn) btn.classList.add('spin');
+  loadCurrentLeague().then(function() {
     renderMatches();
-    loadTable();
+    renderSlipMatchList();
+    if (ACTIVE_LEAGUE.hasTable) {
+      loadSeasonForm().then(function() {
+        renderTable();
+        renderMatches();
+      });
+    } else {
+      renderTable();
+    }
   }).catch(function(e) {
     showNotice(e.message);
   }).then(function() {
-    btn.classList.remove('spin');
+    if (btn) btn.classList.remove('spin');
   });
 }
 
@@ -1183,10 +1864,10 @@ function doReload() {
 var FORM_CACHE = {}; // teamId -> 'WWDLW' string (newest first)
 
 function loadSeasonForm() {
-  var season = ST.curSeason;
-  if (!season) return Promise.resolve();
-  // Load all matchdays 1..current to build form
-  return apiFetch('/getmatchdata/bl1/' + season).then(function(allMatches) {
+  var season   = ST.curSeason;
+  var shortcut = ACTIVE_LEAGUE && ACTIVE_LEAGUE.shortcut ? ACTIVE_LEAGUE.shortcut : 'bl1';
+  if (!season || ACTIVE_LEAGUE.source !== 'openligadb') return Promise.resolve();
+  return apiFetch('/getmatchdata/' + shortcut + '/' + season).then(function(allMatches) {
     // allMatches = every match of the season
     var finished = allMatches.filter(function(m) { return m.matchIsFinished; });
     // Sort by date ascending
@@ -1353,8 +2034,7 @@ function renderMatches() {
     // Home side
     var hSide = mk('div', { cls: 'tside' });
     if (hC) {
-      var hCls = hasWhiteBg(hN) ? 'crest crest-mix' : 'crest';
-      var hImg = mk('img', { cls: hCls, src: hC, alt: hN });
+      var hImg = mk('img', { style: 'max-width:38px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:2px;flex-shrink:0', src: hC, alt: hN });
       hImg.onerror = function() {
         var fb = CR[hN];
         if (fb && this.src !== fb) { this.src = fb; }
@@ -1397,8 +2077,7 @@ function renderMatches() {
     aTxt.style.textAlign = 'right';
     ap(aSide, aTxt);
     if (aC) {
-      var aCls = hasWhiteBg(aN) ? 'crest crest-mix' : 'crest';
-      var aImg = mk('img', { cls: aCls, src: aC, alt: aN });
+      var aImg = mk('img', { style: 'max-width:38px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:2px;flex-shrink:0', src: aC, alt: aN });
       aImg.onerror = function() {
         var fb = CR[aN];
         if (fb && this.src !== fb) { this.src = fb; }
@@ -1438,6 +2117,11 @@ function renderMatches() {
       lt.style.color = '#ff7a7a';
       ap(tags, lt);
     }
+    // Liga-Badge im Multi-Modus
+    if (ACTIVE_LEAGUE.source === 'multi' && m.leagueName) {
+      var lb2 = mk('span', { cls: 'tag t-d' }, m.leagueName);
+      ap(tags, lb2);
+    }
     ap(bot, tags);
     ap(card, bot);
 
@@ -1476,8 +2160,7 @@ function selectMatch(m, pr) {
   function dpTeam(url, name, s) {
     var t = mk('div', { cls: 'dp-team' });
     if (url) {
-      var dpCls = hasWhiteBg(name) ? 'dp-crest dp-crest-mix' : 'dp-crest';
-      var img = mk('img', { cls: dpCls, src: url, alt: name });
+      var img = mk('img', { style: 'max-width:46px;max-height:38px;width:auto;height:auto;object-fit:contain;border-radius:2px', src: url, alt: name });
       (function(imgEl, teamName) {
         imgEl.onerror = function() {
           var fb = CR[teamName];
@@ -1699,9 +2382,198 @@ function selectMatch(m, pr) {
 }
 
 // ── Table ────────────────────────────────────────────────────────────────────
+
+function renderWMGroupPlan() {
+  var tbody = el('tblBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  // Update header
+  var titleEl = el('tableSectionTitle');
+  if (titleEl) titleEl.innerHTML = '🌍 WM 2026';
+  var tblSeason = el('tblSeason');
+  if (tblSeason) tblSeason.textContent = '';
+  var top5El = el('tblTop5');
+  if (top5El) {
+    top5El.innerHTML = '<div style="font-size:.72rem;color:var(--tx2);line-height:1.8">'
+      + '<strong style="color:var(--ac)">FIFA WM 2026</strong><br>'
+      + '🇨🇦 Kanada · 🇺🇸 USA · 🇲🇽 Mexiko<br>'
+      + '<span style="color:var(--tx3)">48 Teams · 104 Spiele</span><br>'
+      + '11. Juni – 19. Juli 2026</div>';
+  }
+  var top5sec = top5El && top5El.previousElementSibling;
+  if (top5sec) top5sec.textContent = 'INFO';
+
+  var allWmMatches = window._wmAllMatches || ST.matches;
+  if (!allWmMatches.length) {
+    ap(tbody, mk('div',{style:'padding:.85rem;text-align:center;color:var(--tx2);font-size:.78rem'},'Keine WM-Daten geladen.'));
+    return;
+  }
+
+  // Group matches by group
+  var groups = {}, groupOrder = [];
+  allWmMatches.forEach(function(m) {
+    var key = m.group || 'Sonstige';
+    if (!groups[key]) { groups[key]=[]; groupOrder.push(key); }
+    groups[key].push(m);
+  });
+  groupOrder = groupOrder.filter(function(v,i,a){ return a.indexOf(v)===i; });
+
+  // Separate group stage from knockout
+  var groupStage = groupOrder.filter(function(k){ return k.match(/group/i); });
+  var knockout   = groupOrder.filter(function(k){ return !k.match(/group/i); });
+
+  // ── GROUP STAGE ────────────────────────────────────────────────────────
+  var wrap = mk('div',{cls:'wm-wrap'});
+
+  // Left: group cards in 2-col grid
+  var groupsGrid = mk('div',{cls:'wm-groups'});
+  groupStage.forEach(function(grpName) {
+    var matches = groups[grpName];
+    var card    = mk('div',{cls:'wm-group-card'});
+
+    // Header with team list
+    var hdr = mk('div',{cls:'wm-group-hdr'});
+    ap(hdr, mk('span',{cls:'wm-group-name'},grpName));
+    // Get unique teams
+    var teams = [];
+    matches.forEach(function(m){
+      var t1=m.team1?m.team1.teamName:'?', t2=m.team2?m.team2.teamName:'?';
+      if(teams.indexOf(t1)<0) teams.push(t1);
+      if(teams.indexOf(t2)<0) teams.push(t2);
+    });
+    ap(hdr, mk('span',{cls:'wm-group-teams'}, teams.slice(0,4).map(function(t){return t.slice(0,3).toUpperCase();}).join(' · ')));
+    ap(card, hdr);
+
+    // Matches
+    matches.forEach(function(m) {
+      var t1  = m.team1 ? m.team1.teamName : '?';
+      var t2  = m.team2 ? m.team2.teamName : '?';
+      var row = mk('div',{cls:'wm-match-row'});
+
+      function flagEl(name, url, isR) {
+        var side = mk('div',{cls:'wm-match-team'+(isR?' r':'')});
+        if (url) {
+          var wrap2=mk('div',{cls:'wm-flag'});
+          var img=mk('img',{style:'width:100%;height:100%;object-fit:cover',src:url});
+          img.onerror=function(){wrap2.innerHTML='';wrap2.className='wm-flag-fb';wrap2.textContent=name.slice(0,2).toUpperCase();};
+          ap(wrap2,img);ap(side,wrap2);
+        } else { ap(side,mk('div',{cls:'wm-flag-fb'},name.slice(0,2).toUpperCase())); }
+        ap(side,mk('span',{cls:'wm-tname'},name));
+        return side;
+      }
+      ap(row, flagEl(t1, m.team1&&m.team1.teamIconUrl, false));
+
+      var mid = mk('div',{cls:'wm-score'+(m.matchIsFinished?'':' pending')});
+      if (m.matchIsFinished && m.matchResults && m.matchResults.length) {
+        var r=m.matchResults[0];
+        mid.textContent=(r.pointsTeam1||0)+':'+(r.pointsTeam2||0);
+      } else if (m.matchDateTime) {
+        var dt=new Date(m.matchDateTime);
+        mid.textContent=dt.toLocaleDateString('de-DE',{day:'numeric',month:'short'});
+        mid.style.fontSize='.55rem'; mid.style.lineHeight='1.3';
+      } else { mid.textContent='vs'; }
+      ap(row, mid);
+
+      ap(row, flagEl(t2, m.team2&&m.team2.teamIconUrl, true));
+      ap(card, row);
+    });
+
+    // Mini standings (simulate from results)
+    var standing = {};
+    teams.forEach(function(t){ standing[t]={pts:0,gf:0,ga:0,pl:0}; });
+    matches.forEach(function(m){
+      if (!m.matchIsFinished || !m.matchResults || !m.matchResults.length) return;
+      var r=m.matchResults[0];
+      var t1=m.team1.teamName, t2=m.team2.teamName;
+      var g1=r.pointsTeam1||0, g2=r.pointsTeam2||0;
+      if (standing[t1]) { standing[t1].gf+=g1; standing[t1].ga+=g2; standing[t1].pl++; standing[t1].pts+=(g1>g2?3:g1===g2?1:0); }
+      if (standing[t2]) { standing[t2].gf+=g2; standing[t2].ga+=g1; standing[t2].pl++; standing[t2].pts+=(g2>g1?3:g2===g1?1:0); }
+    });
+    var sorted = teams.slice().sort(function(a,b){
+      return (standing[b]?standing[b].pts:0)-(standing[a]?standing[a].pts:0);
+    });
+    sorted.forEach(function(t,i){
+      var st=standing[t]||{pts:0,gf:0,ga:0,pl:0};
+      var srow=mk('div',{cls:'wm-standing'+(i<3?' top3':'')});
+      ap(srow,mk('span',{cls:'wm-st-rank'},String(i+1)));
+      var nf=mk('div',{cls:'wm-match-team',style:'min-width:0'});
+      var flag=getFlagUrl(t);
+      if(flag){var fw=mk('div',{cls:'wm-flag',style:'width:14px;height:14px'});var fi=mk('img',{style:'width:100%;height:100%;object-fit:cover',src:flag});fi.onerror=function(){fw.style.display='none';};ap(fw,fi);ap(nf,fw);}
+      ap(nf,mk('span',{cls:'wm-tname',style:'font-size:.63rem'},t));ap(srow,nf);
+      ap(srow,mk('span',{cls:'wm-st-val'},String(st.pl)));
+      ap(srow,mk('span',{cls:'wm-st-val'},(st.gf-st.ga>=0?'+':'')+(st.gf-st.ga)));
+      ap(srow,mk('span',{cls:'wm-st-val'},st.gf+':'+st.ga));
+      ap(srow,mk('span',{cls:'wm-st-pts'},String(st.pts)));
+      ap(card,srow);
+    });
+    ap(groupsGrid, card);
+  });
+  ap(wrap, groupsGrid);
+
+  // KO bracket only when actual KO matches exist
+  var hasRealKO = knockout.some(function(k){ return groups[k] && groups[k].length > 0; });
+  if (hasRealKO) {
+    var bracket = mk('div',{cls:'wm-bracket',style:'margin-top:0'});
+    ap(bracket,mk('div',{cls:'wm-bracket-title'},'KO-RUNDE'));
+    var bGrid=mk('div',{cls:'bracket-grid'});
+    var koRounds=['Achtelfinale','Viertelfinale','Halbfinale','Finale'];
+    koRounds.forEach(function(roundName){
+      var rMatches=groups[roundName]||[];
+      var col=mk('div',{cls:'bracket-round'});
+      ap(col,mk('div',{cls:'bracket-round-lbl'},roundName));
+      rMatches.forEach(function(m){
+        var bm=mk('div',{cls:'bracket-match'});
+        var t1=m.team1?m.team1.teamName:'TBD';
+        var t2=m.team2?m.team2.teamName:'TBD';
+        var winner='',s1='',s2='';
+        if(m.matchIsFinished&&m.matchResults&&m.matchResults.length){
+          var r=m.matchResults[0];s1=r.pointsTeam1;s2=r.pointsTeam2;
+          winner=s1>s2?t1:s2>s1?t2:'';
+        }
+        var bt1=mk('div',{cls:'bracket-team'+(t1===winner?' winner':'')});
+        ap(bt1,mk('span',{style:'flex:1'},t1));
+        if(s1!=='')ap(bt1,mk('span',{cls:'bracket-score'},String(s1)));
+        var bt2=mk('div',{cls:'bracket-team'+(t2===winner?' winner':'')});
+        ap(bt2,mk('span',{style:'flex:1'},t2));
+        if(s2!=='')ap(bt2,mk('span',{cls:'bracket-score'},String(s2)));
+        ap(bm,bt1);ap(bm,mk('div',{cls:'bracket-sep'}));ap(bm,bt2);
+        ap(col,bm);
+      });
+      // Placeholder if no matches yet
+      if (!rMatches.length) {
+        var ph=mk('div',{cls:'bracket-match',style:'opacity:.4'});
+        ap(ph,mk('div',{cls:'bracket-team'},'TBD'));
+        ap(ph,mk('div',{cls:'bracket-sep'}));
+        ap(ph,mk('div',{cls:'bracket-team'},'TBD'));
+        ap(col,ph);
+      }
+      ap(bGrid,col);
+    });
+    ap(bracket,bGrid);
+    ap(wrap,bracket);
+  }
+
+  ap(tbody, wrap);
+}
+
+
 function renderTable() {
   var tbody = el('tblBody');
+  // Show table, hide WM content
+  var tblWrap3 = el('tblTableWrap');
+  var wmDiv2   = el('wmContent');
+  if (tblWrap3) tblWrap3.style.display = '';
+  if (wmDiv2)   wmDiv2.style.display   = 'none';
+  // WM/Multi mode: show schedule overview instead of table
+  if (!ACTIVE_LEAGUE.hasTable) {
+    renderWMGroupPlan();
+    return;
+  }
   if (!ST.table.length) return;
+  // Reset header to table mode
+  var titleEl = el('tableSectionTitle');
+  if (titleEl) titleEl.innerHTML = 'TABELLE <span id="tblSeason">' + (ST.curSeason ? (ST.curSeason+'/'+(ST.curSeason%100+1)) : '') + '</span>';
   tbody.innerHTML = '';
   var top5 = el('tblTop5');
   top5.innerHTML = '';
@@ -1983,50 +2855,168 @@ function loadSlipsFromIDB(cb) {
 function renderSlipMatchList() {
   var list = el('slipMatchList');
   list.innerHTML = '';
-  if (!ST.matches.length) {
-    ap(list, mk('div', { style: 'color:var(--tx3);font-size:.78rem;text-align:center;padding:2rem 0' }, 'Keine Spiele geladen.'));
+  // Sommerpause / alle Spiele beendet
+  if (!ST.matches.length || isSommerpause()) {
+    var isWM = ACTIVE_LEAGUE && ACTIVE_LEAGUE.id === 'wm2026';
+    var notice = mk('div', { style:'background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1.1rem;text-align:center;margin-bottom:.85rem' });
+    var icon   = mk('div', { style:'font-size:1.5rem;margin-bottom:.35rem' }, isWM ? '🌍' : '☀️');
+    ap(notice, icon);
+    var title2 = mk('div', { style:'font-size:.82rem;font-weight:700;color:var(--tx);margin-bottom:.25rem' });
+    title2.textContent = isWM ? 'Noch keine WM-Spiele heute' : 'Aktuell keine Spiele verfügbar';
+    ap(notice, title2);
+    var sub2 = mk('div', { style:'font-size:.72rem;color:var(--tx2);line-height:1.6' });
+    if (!ST.matches.length) {
+      sub2.textContent = isWM ? 'WM-Daten werden geladen…' : 'Keine Spielplandaten geladen. Bitte aktualisieren.';
+    } else {
+      sub2.innerHTML = isWM
+        ? 'Alle Gruppenspiele dieser Runde sind beendet.<br>Die nächste Spielrunde wird angezeigt sobald sie beginnt.'
+        : 'Die Saison ist beendet oder es besteht Spielpause.<br>Neue Spiele werden automatisch geladen sobald verfügbar.';
+    }
+    ap(notice, sub2);
+    ap(list, notice);
+    // Still show slip history below
     return;
   }
+
+  var tipLabels3 = {
+    home:'1 Heim', draw:'X Unent.', away:'2 Auswärts',
+    '1x':'1X', 'x2':'X2', '12':'12',
+    o25:'Über 2,5', u25:'Unter 2,5',
+    o35:'Über 3,5', u35:'Unter 3,5',
+    btts:'Beide treffen', nbtts:'Kein BTTS'
+  };
+
   ST.matches.forEach(function(m) {
-    var hN = m.team1 ? (m.team1.teamName || '?') : '?';
-    var aN = m.team2 ? (m.team2.teamName || '?') : '?';
-    var dt = m.matchDateTime ? new Date(m.matchDateTime) : null;
-    var dStr = dt ? dt.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '–';
-    var pr   = calcProbs(m.matchID || 0, hN, aN);
+    var hN   = m.team1 ? (m.team1.teamName||'?') : '?';
+    var aN   = m.team2 ? (m.team2.teamName||'?') : '?';
+    var hS   = hN.slice(0,3).toUpperCase();
+    var aS   = aN.slice(0,3).toUpperCase();
+    var pr   = calcProbs(m.matchID||0, hN, aN);
+    var dt   = m.matchDateTime ? new Date(m.matchDateTime) : null;
+    var dStr = dt ? dt.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
 
-    // Is this match already in the slip?
-    var inSlip = currentSlip.some(function(s) { return s.matchID === m.matchID; });
+    var inSlip = currentSlip.some(function(s){ return s.matchID===m.matchID; });
+    var card   = mk('div', { cls:'gmc'+(inSlip?' gmc-in-slip':'') });
+    card.id    = 'smc'+m.matchID;
 
-    var row = mk('div', { cls: 'slip-match-row' + (inSlip ? ' in-slip' : '') });
-    row.id = 'smr' + m.matchID;
+    // TOP
+    var top = mk('div',{cls:'gmc-top'});
+    function makeFlag2(name,ini,apiUrl,isR) {
+      var side = mk('div',{cls:'gmc-team'+(isR?' r':'')});
+      var url  = getCrest(name,apiUrl);
+      if (url) {
+        var wrap=mk('div',{cls:'gmc-flag'});
+        var img=mk('img',{style:'max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:2px',src:url,alt:name});
+        img.onerror=function(){wrap.innerHTML='';wrap.className='gmc-flag-fb';wrap.textContent=ini.slice(0,2);};
+        ap(wrap,img);ap(side,wrap);
+      } else { ap(side,mk('div',{cls:'gmc-flag-fb'},ini.slice(0,2))); }
+      ap(side,mk('span',{cls:'gmc-name'},name));
+      return side;
+    }
+    ap(top,makeFlag2(hN,hS,m.team1?m.team1.teamIconUrl:null,false));
+    var mid=mk('div',{cls:'gmc-mid'});
+    if(dt) ap(mid,mk('div',{cls:'gmc-time'},dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr'));
+    ap(mid,mk('div',{cls:'gmc-vs'},'VS'));
+    if(dt) ap(mid,mk('div',{cls:'gmc-date'},dt.toLocaleDateString('de-DE',{day:'numeric',month:'short'})));
+    ap(top,mid);
+    ap(top,makeFlag2(aN,aS,m.team2?m.team2.teamIconUrl:null,true));
+    ap(card,top);
 
-    var top = mk('div', { cls: 'smr-top' });
-    ap(top, mk('div', { cls: 'smr-teams' }, hN + ' – ' + aN));
-    ap(top, mk('div', { cls: 'smr-date' }, dStr));
-    ap(row, top);
-
-    // Tip buttons
-    var tips = mk('div', { cls: 'smr-tips' });
-    SLIP_TIPS.forEach(function(t) {
-      // Probability for this tip
-      var tipProb = getTipProb(pr, t.id);
-      var btn = mk('button', { cls: 'tip-btn' + (isInSlip(m.matchID, t.id) ? ' sel' : '') });
-      btn.textContent = t.lbl;
-      if (tipProb > 0) {
-        var probSpan = mk('span', { style: 'margin-left:.3rem;font-family:DM Mono,monospace;font-size:.6rem;opacity:.7' });
-        probSpan.textContent = tipProb + '%';
-        ap(btn, probSpan);
-      }
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleSlipTip(m, hN, aN, dStr, t.id, t.lbl, tipProb, pr);
-      });
-      ap(tips, btn);
+    // ALL TIPS
+    var allTips = ['home','draw','away','1x','x2','12','o25','u25','o35','u35','btts','nbtts'].map(function(id){
+      return {id:id, prob:calcTipProb(id,pr.wH,pr.wD,pr.wA,pr.xH,pr.xA), lbl:tipLabels3[id]||id};
     });
-    ap(row, tips);
-    ap(list, row);
+
+    // Primary 3
+    var oddsRow=mk('div',{cls:'gmc-odds'});
+    allTips.slice(0,3).forEach(function(t){
+      var odds=slipOdds(t.prob);
+      var isSel=currentSlip.some(function(s){return s.matchID===m.matchID&&s.tipId===t.id;});
+      var btn=mk('div',{cls:'gmc-odd-btn'+(isSel?' sel':'')});
+      ap(btn,mk('div',{cls:'gmc-odd-lbl'},t.lbl));
+      ap(btn,mk('div',{cls:'gmc-odd-val'},String(odds)));
+      (function(mx,tipId,tipLbl,prob,hn,an,ds,pr2){
+        btn.addEventListener('click',function(){ toggleSlipTip(mx,hn,an,ds,tipId,tipLbl,prob,pr2); });
+      })(m,t.id,tipLabels3[t.id]||t.id,t.prob,hN,aN,dStr,pr);
+      ap(oddsRow,btn);
+    });
+    ap(card,oddsRow);
+
+    // Expand bar
+    var expBar=mk('div',{cls:'gmc-expand'});
+    var moreBtn=mk('button',{cls:'gmc-expand-btn'});
+    ap(moreBtn,mk('span',{},'Mehr Märkte'));
+    var arr=mk('span',{cls:'gmc-expand-arr'},'▼');
+    ap(moreBtn,arr);
+    var statsBtn=mk('button',{cls:'gmc-stats-btn'},'📊 Stats');
+    ap(expBar,moreBtn);ap(expBar,statsBtn);ap(card,expBar);
+
+    // More tips
+    var moreP=mk('div',{cls:'gmc-more'});
+    var moreG=mk('div',{cls:'gmc-more-grid'});
+    allTips.slice(3).forEach(function(t){
+      var odds=slipOdds(t.prob);
+      var isSel=currentSlip.some(function(s){return s.matchID===m.matchID&&s.tipId===t.id;});
+      var btn=mk('div',{cls:'gmc-odd-btn'+(isSel?' sel':'')});
+      ap(btn,mk('div',{cls:'gmc-odd-lbl'},t.lbl));
+      ap(btn,mk('div',{cls:'gmc-odd-val'},String(odds)));
+      (function(mx,tipId,tipLbl,prob,hn,an,ds,pr2){
+        btn.addEventListener('click',function(){ toggleSlipTip(mx,hn,an,ds,tipId,tipLbl,prob,pr2); });
+      })(m,t.id,tipLabels3[t.id]||t.id,t.prob,hN,aN,dStr,pr);
+      ap(moreG,btn);
+    });
+    ap(moreP,moreG);ap(card,moreP);
+
+    // Stats panel
+    var statsP=mk('div',{cls:'gmc-stats'});
+    var bar=mk('div',{cls:'gmc-prob-bar'});
+    ap(bar,mk('div',{style:'width:'+pr.wH+'%;height:100%;float:left;background:var(--win)'}));
+    ap(bar,mk('div',{style:'width:'+pr.wD+'%;height:100%;float:left;background:var(--draw)'}));
+    ap(bar,mk('div',{style:'width:'+pr.wA+'%;height:100%;float:left;background:var(--loss)'}));
+    ap(statsP,bar);
+    var prow2=mk('div',{style:'display:flex;justify-content:space-between;font-size:.64rem;margin:.2rem 0 .5rem'});
+    ap(prow2,mk('span',{style:'color:var(--win)'},hN+' '+pr.wH+'%'));
+    ap(prow2,mk('span',{style:'color:var(--draw)'},'X '+pr.wD+'%'));
+    ap(prow2,mk('span',{style:'color:var(--loss)'},aN+' '+pr.wA+'%'));
+    ap(statsP,prow2);
+    var hId2=m.team1?(m.team1.teamId||m.team1.teamID):null;
+    var aId2=m.team2?(m.team2.teamId||m.team2.teamID):null;
+    var hF2=hId2?(FORM_CACHE[hId2]||FORM_CACHE['name_'+hN]||''):FORM_CACHE['name_'+hN]||'';
+    var aF2=aId2?(FORM_CACHE[aId2]||FORM_CACHE['name_'+aN]||''):FORM_CACHE['name_'+aN]||'';
+    if(hF2||aF2){
+      var fr2=mk('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;gap:.3rem'});
+      function fmB2(form){var w=mk('div',{style:'display:flex;gap:2px'});for(var i=0;i<5;i++){var l=form[i]||'?';var col=l==='W'?'var(--win)':l==='L'?'var(--loss)':l==='D'?'var(--draw)':'var(--bg3)';var fb=mk('div',{style:'width:16px;height:16px;border-radius:3px;background:'+col+';display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;color:#08090d'});fb.textContent=l!=='?'?l:'';ap(w,fb);}return w;}
+      ap(fr2,fmB2(hF2));ap(fr2,mk('span',{style:'font-size:.6rem;color:var(--tx3);flex-shrink:0'},'Form'));ap(fr2,fmB2(aF2));
+      ap(statsP,fr2);
+    }
+    var o25p2=calcTipProb('o25',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    var bttsp2=calcTipProb('btts',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    function sRow2(lbl,v1,v2,c1,c2){
+      var r=mk('div',{style:'display:flex;align-items:center;padding:.28rem 0;border-bottom:1px solid var(--bo);font-size:.72rem'});
+      ap(r,mk('span',{style:'font-weight:600;color:'+(c1||'var(--win)')},v1));
+      ap(r,mk('span',{style:'color:var(--tx3);font-size:.62rem;text-align:center;flex:1'},lbl));
+      ap(r,mk('span',{style:'font-weight:600;color:'+(c2||'var(--loss)')+';text-align:right'},v2));
+      return r;
+    }
+    var o25p2=calcTipProb('o25',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    var bttsp2=calcTipProb('btts',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    var sg2=mk('div',{style:'display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:.3rem'});
+    function sb2(lbl,v1,v2){var b=mk('div',{style:'background:var(--bg3);border-radius:5px;padding:.32rem .4rem;text-align:center'});ap(b,mk('div',{style:'font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px'},lbl));var vr=mk('div',{style:'display:flex;justify-content:space-between;align-items:center'});ap(vr,mk('span',{style:'font-size:.78rem;font-weight:700;color:var(--win)'},String(v1)));ap(vr,mk('span',{style:'font-size:.78rem;font-weight:700;color:var(--loss)'},String(v2)));ap(b,vr);return b;}
+    ap(sg2,sb2('xG',pr.xH,pr.xA));ap(sg2,sb2('Ü2.5',o25p2+'%',(100-o25p2)+'%'));ap(sg2,sb2('BTTS',bttsp2+'%',(100-bttsp2)+'%'));
+    ap(statsP,sg2);
+    var hSt2=teamStat(hN,hId2),aSt2=teamStat(aN,aId2);
+    if(hSt2||aSt2){var pp2=mk('div',{style:'display:flex;justify-content:space-between;font-size:.65rem;margin-top:.3rem'});ap(pp2,mk('span',{style:'color:var(--tx2)'},hSt2?'#'+teamRank(hSt2)+' · '+hSt2.points+'Pts':'–'));ap(pp2,mk('span',{style:'color:var(--tx3)'},'Tabelle'));ap(pp2,mk('span',{style:'color:var(--tx2);text-align:right'},aSt2?aSt2.points+'Pts · #'+teamRank(aSt2):'–'));ap(statsP,pp2);}
+    ap(card,statsP);
+
+    (function(mp,sp,a){
+      moreBtn.addEventListener('click',function(){ mp.classList.toggle('open'); a.textContent=mp.classList.contains('open')?'▲':'▼'; });
+      statsBtn.addEventListener('click',function(){ sp.classList.toggle('open'); statsBtn.textContent=sp.classList.contains('open')?'📊 Stats ▲':'📊 Stats'; });
+    })(moreP,statsP,arr);
+
+    ap(list,card);
   });
 }
+
 
 function getTipProb(pr, tipId) {
   if (tipId === 'home')  return pr.wH;
@@ -2252,6 +3242,8 @@ function submitSlip() {
     stake:      stake,
     potPayout:  payout,
     count:      currentSlip.length,
+    leagueId:   ACTIVE_LEAGUE ? ACTIVE_LEAGUE.id : 'bl1',
+    leagueName: ACTIVE_LEAGUE ? ACTIVE_LEAGUE.name : 'Bundesliga',
     bets: currentSlip.map(function(s) {
       return {
         matchID: s.matchID, hN: s.hN, aN: s.aN, dStr: s.dStr,
@@ -2279,10 +3271,21 @@ function submitSlip() {
 function renderSubmittedSlips() {
   var container = el('submittedSlips');
   container.innerHTML = '';
-  var slips = getSlips();
+  var allSlips = getSlips();
+  var curLeague = ACTIVE_LEAGUE ? ACTIVE_LEAGUE.id : 'bl1';
+
+  // Filter slips by active league
+  // Old slips without leagueId: show in bl1 only
+  var slips = allSlips.filter(function(s) {
+    var slipLeague = s.leagueId || 'bl1';
+    return slipLeague === curLeague;
+  });
 
   if (!slips.length) {
-    ap(container, mk('div', { style: 'color:var(--tx3);font-size:.74rem;text-align:center;padding:1.5rem 0' }, 'Noch keine abgegebenen Scheine'));
+    var noSlipMsg = allSlips.length > 0
+      ? 'Noch keine Scheine für ' + (ACTIVE_LEAGUE ? ACTIVE_LEAGUE.name : 'diese Liga')
+      : 'Noch keine abgegebenen Scheine';
+    ap(container, mk('div', { style: 'color:var(--tx3);font-size:.74rem;text-align:center;padding:1.5rem 0' }, noSlipMsg));
     return;
   }
 
@@ -2431,6 +3434,212 @@ function setBetOutcome(slipId, matchId, outcome) {
 
 
 
+// ════════════════════════════════════════════════════════════════
+// FIREBASE AUTH – E-Mail/Passwort Login
+// ════════════════════════════════════════════════════════════════
+
+var FB_USER = null; // aktuell eingeloggter Firebase User
+
+// Auth-Zustand überwachen – wird beim Laden aufgerufen
+function initFirebaseAuth() {
+  fbAuth.onAuthStateChanged(function(user) {
+    FB_USER = user;
+    if (user) {
+      // User eingeloggt – Session setzen
+      G_ME = user.displayName || user.email.split('@')[0];
+      saveSession({ name: G_ME, uid: user.uid, email: user.email });
+      localStorage.setItem('kap_g2_my_name', G_ME);
+    } else {
+      FB_USER = null;
+    }
+  });
+}
+
+// Fehlertext aus Firebase Error Code
+function fbAuthError(code) {
+  var msgs = {
+    'auth/email-already-in-use':    'Diese E-Mail-Adresse wird bereits verwendet.',
+    'auth/invalid-email':           'Ungültige E-Mail-Adresse.',
+    'auth/weak-password':           'Passwort muss mindestens 6 Zeichen haben.',
+    'auth/user-not-found':          'Kein Konto mit dieser E-Mail gefunden.',
+    'auth/wrong-password':          'Falsches Passwort.',
+    'auth/invalid-credential':      'E-Mail oder Passwort falsch.',
+    'auth/too-many-requests':       'Zu viele Versuche. Bitte kurz warten.',
+    'auth/network-request-failed':  'Keine Internetverbindung.',
+    'auth/popup-closed-by-user':    'Anmeldung abgebrochen.',
+  };
+  return msgs[code] || 'Fehler: ' + code;
+}
+
+function doRegister() {
+  var name  = (el('regName')      && el('regName').value.trim())      || '';
+  var email = (el('regEmail')     && el('regEmail').value.trim())     || '';
+  var pw    = (el('regPassword')  && el('regPassword').value)         || '';
+  var pw2   = (el('regPassword2') && el('regPassword2').value)        || '';
+
+  if (!name)  { setLoginError('Bitte einen Anzeigenamen eingeben.'); return; }
+  if (name.length < 2) { setLoginError('Name muss mindestens 2 Zeichen haben.'); return; }
+  if (!email) { setLoginError('Bitte eine E-Mail-Adresse eingeben.'); return; }
+  if (!pw)    { setLoginError('Bitte ein Passwort eingeben.'); return; }
+  if (pw.length < 6) { setLoginError('Passwort muss mindestens 6 Zeichen haben.'); return; }
+  if (pw !== pw2) { setLoginError('Passwörter stimmen nicht überein.'); return; }
+
+  var btn = document.querySelector('#gsRegisterForm .login-btn');
+  if (btn) { btn.textContent = 'Wird registriert…'; btn.disabled = true; }
+  function resetBtn() { if (btn) { btn.textContent = 'Konto erstellen'; btn.disabled = false; } }
+
+  fbAuth.createUserWithEmailAndPassword(email, pw)
+    .then(function(cred) {
+      // Anzeigenamen setzen
+      return cred.user.updateProfile({ displayName: name }).then(function() {
+        FB_USER = cred.user;
+        G_ME = name;
+        saveSession({ name: name, uid: cred.user.uid, email: email });
+        localStorage.setItem('kap_g2_my_name', name);
+
+        // Profil in Firebase DB speichern (für Gruppenanzeige)
+        return fbDb.ref('users/' + cred.user.uid).set({
+          name: name,
+          email: email,
+          created: new Date().toISOString()
+        });
+      });
+    })
+    .then(function() {
+      clearLoginError();
+      resetBtn();
+      // E-Mail-Verifizierung senden
+      if (FB_USER) FB_USER.sendEmailVerification().catch(function(){});
+      showGroupsScreen();
+    })
+    .catch(function(e) {
+      resetBtn();
+      setLoginError(fbAuthError(e.code));
+    });
+}
+
+function doLogin() {
+  var email = (el('loginEmail')    && el('loginEmail').value.trim()) || '';
+  var pw    = (el('loginPassword') && el('loginPassword').value)     || '';
+
+  if (!email || !pw) { setLoginError('Bitte E-Mail und Passwort eingeben.'); return; }
+
+  var btn = document.querySelector('#gsLoginForm .login-btn');
+  if (btn) { btn.textContent = 'Wird angemeldet…'; btn.disabled = true; }
+  function resetBtn() { if (btn) { btn.textContent = 'Anmelden'; btn.disabled = false; } }
+
+  fbAuth.signInWithEmailAndPassword(email, pw)
+    .then(function(cred) {
+      FB_USER = cred.user;
+      G_ME = cred.user.displayName || cred.user.email.split('@')[0];
+      saveSession({ name: G_ME, uid: cred.user.uid, email: cred.user.email });
+      localStorage.setItem('kap_g2_my_name', G_ME);
+      clearLoginError();
+      resetBtn();
+      showGroupsScreen();
+    })
+    .catch(function(e) {
+      resetBtn();
+      setLoginError(fbAuthError(e.code));
+    });
+}
+
+function doForgotPassword() {
+  var email = (el('loginEmail') && el('loginEmail').value.trim()) || '';
+  if (!email) {
+    setLoginError('Bitte zuerst deine E-Mail-Adresse eingeben.');
+    return;
+  }
+  fbAuth.sendPasswordResetEmail(email)
+    .then(function() {
+      setLoginError('✓ Reset-E-Mail gesendet an ' + email);
+      el('gsLoginError').style.background = 'rgba(71,255,100,.08)';
+      el('gsLoginError').style.color = 'var(--win)';
+    })
+    .catch(function(e) {
+      setLoginError(fbAuthError(e.code));
+    });
+}
+
+function doLogout() {
+  fbAuth.signOut().then(function() {
+    saveSession(null);
+    localStorage.removeItem('kap_g2_my_name');
+    LEAGUES.forEach(function(l) { localStorage.removeItem('kap_g2_grp_' + l.id); });
+    GRP = null; G_ME = null; FB_USER = null; G_SLIP = [];
+    stopCountdownTimer();
+    if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+    if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
+    el('groupSetup').style.display = 'block';
+    el('groupMain').style.display  = 'none';
+    el('gsLogin').style.display    = 'block';
+    el('gsGroups').style.display   = 'none';
+    ['loginEmail','loginPassword','regName','regEmail','regPassword','regPassword2'].forEach(function(id) {
+      var e2 = el(id); if (e2) e2.value = '';
+    });
+    clearLoginError();
+  }).catch(function(){});
+}
+
+// initGroupTab uses Firebase Auth state
+function initGroupTab() {
+  loadSavedFbUrl();
+
+  // Check Firebase Auth state
+  var currentUser = fbAuth.currentUser;
+  var session = getSession();
+
+  if (!currentUser && !session) {
+    showGroupSetup();
+    el('gsLogin').style.display  = 'block';
+    el('gsGroups').style.display = 'none';
+    return;
+  }
+
+  if (currentUser) {
+    G_ME = currentUser.displayName || currentUser.email.split('@')[0];
+    FB_USER = currentUser;
+  } else if (session) {
+    G_ME = session.name;
+  }
+
+  localStorage.setItem('kap_g2_my_name', G_ME);
+
+  // Check for active group for this league
+  var code = getActiveGrpCode();
+  if (code) {
+    var loadFn = G_FB_URL
+      ? fbGet('groups/' + code).catch(function() { return loadGrpLocal(code); })
+      : Promise.resolve(loadGrpLocal(code));
+
+    loadFn.then(function(g) {
+      if (g && g.members) {
+        GRP = g;
+        if (!GRP.members[G_ME]) GRP.members[G_ME] = { balance: START_BAL, history: [] };
+        saveGrpLocal(GRP);
+        showGroupMain();
+      } else {
+        showGroupSetup();
+        showGroupsScreen();
+      }
+    }).catch(function() {
+      var local = loadGrpLocal(code);
+      if (local && local.members) {
+        GRP = local;
+        showGroupMain();
+      } else {
+        showGroupSetup();
+        showGroupsScreen();
+      }
+    });
+  } else {
+    showGroupSetup();
+    showGroupsScreen();
+  }
+}
+
+
+
 // ════════════════════════════════════════════════════════
 // LOGIN & MULTI-GROUP SYSTEM
 // Profil: Name + PIN → gespeichert in localStorage
@@ -2438,23 +3647,26 @@ function setBetOutcome(slipId, matchId, outcome) {
 // ════════════════════════════════════════════════════════
 
 // ── Profil Storage ───────────────────────────────────────
+// ── Profile Storage (Firebase-backed, cross-device) ─────────────────────────
 function getProfiles()   { try { return JSON.parse(localStorage.getItem('fb_profiles') || '{}'); } catch(_) { return {}; } }
 function saveProfiles(p) { try { localStorage.setItem('fb_profiles', JSON.stringify(p)); } catch(_) {} }
+
+// Firebase profile path: /profiles/{name}
+function fbGetProfile(name) {
+  if (!G_FB_URL) return Promise.resolve(null);
+  return fbGet('profiles/' + encodeURIComponent(name)).catch(function() { return null; });
+}
+function fbSaveProfile(name, profile) {
+  if (!G_FB_URL) return Promise.resolve();
+  return fbSet('profiles/' + encodeURIComponent(name), profile).catch(function() {});
+}
 function getSession()    { try { return JSON.parse(localStorage.getItem('fb_session')  || 'null'); } catch(_) { return null; } }
 function saveSession(s)  { try { localStorage.setItem('fb_session',  JSON.stringify(s)); } catch(_) {} }
 
 // session = { name, pin (hashed) }
 // profiles[name] = { pin, groups: ['CODE1','CODE2'] }
 
-function hashPin(pin) {
-  // Simple hash – not cryptographic but sufficient for this use case
-  var h = 0;
-  for (var i = 0; i < pin.length; i++) {
-    h = ((h << 5) - h) + pin.charCodeAt(i);
-    h |= 0;
-  }
-  return String(h);
-}
+// hashPin entfernt - Firebase Auth übernimmt Passwort-Sicherheit
 
 // ── Login Screens ─────────────────────────────────────────
 function showLogin()    { el('gsLoginForm').style.display='block'; el('gsRegisterForm').style.display='none'; clearLoginError(); }
@@ -2469,55 +3681,11 @@ function clearLoginError() {
   if (e) e.style.display = 'none';
 }
 
-function doRegister() {
-  var name = (el('regName')  && el('regName').value.trim())  || '';
-  var pin  = (el('regPin')   && el('regPin').value.trim())   || '';
-  var pin2 = (el('regPin2')  && el('regPin2').value.trim())  || '';
-  if (!name) { setLoginError('Bitte einen Namen eingeben.'); return; }
-  if (name.length < 2) { setLoginError('Name muss mindestens 2 Zeichen haben.'); return; }
-  if (!/^\d{4}$/.test(pin)) { setLoginError('PIN muss genau 4 Ziffern sein.'); return; }
-  if (pin !== pin2) { setLoginError('PINs stimmen nicht überein.'); return; }
-  var profiles = getProfiles();
-  if (profiles[name]) { setLoginError('Der Name "' + name + '" ist bereits vergeben. Bitte wähle einen anderen Namen oder melde dich an.'); return; }
-  profiles[name] = { pin: hashPin(pin), groups: [] };
-  saveProfiles(profiles);
-  saveSession({ name: name });
-  localStorage.setItem('kap_g2_my_name', name);
-  clearLoginError();
-  showGroupsScreen();
-}
 
-function doLogin() {
-  var name = (el('loginName') && el('loginName').value.trim()) || '';
-  var pin  = (el('loginPin')  && el('loginPin').value.trim())  || '';
-  if (!name || !pin) { setLoginError('Bitte Name und PIN eingeben.'); return; }
-  var profiles = getProfiles();
-  var profile  = profiles[name];
-  if (!profile) { setLoginError('Kein Konto für "' + name + '" gefunden. Bitte zuerst registrieren.'); return; }
-  if (profile.pin !== hashPin(pin)) { setLoginError('Falscher PIN.'); return; }
-  saveSession({ name: name });
-  localStorage.setItem('kap_g2_my_name', name);
-  clearLoginError();
-  showGroupsScreen();
-}
 
-function doLogout() {
-  saveSession(null);
-  localStorage.removeItem('kap_g2_my_grp');
-  GRP = null; G_ME = null; G_SLIP = [];
-  stopCountdownTimer();
-  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
-  if (window.G_SETTLE_TIMER) { clearInterval(window.G_SETTLE_TIMER); }
-  el('groupSetup').style.display = 'block';
-  el('groupMain').style.display  = 'none';
-  el('gsLogin').style.display    = 'block';
-  el('gsGroups').style.display   = 'none';
-  // Clear inputs
-  ['loginName','loginPin','regName','regPin','regPin2'].forEach(function(id) {
-    var el2 = el(id); if (el2) el2.value = '';
-  });
-  clearLoginError();
-}
+
+
+
 
 // ── Groups Screen ─────────────────────────────────────────
 function showGroupsScreen() {
@@ -2529,9 +3697,13 @@ function showGroupsScreen() {
 
   // Avatar initials
   var avatar = el('gsAvatar');
-  if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+  var displayName = (FB_USER && FB_USER.displayName) || name;
+  if (avatar) avatar.textContent = displayName.charAt(0).toUpperCase();
   var pname = el('gsProfileName');
-  if (pname) pname.textContent = name;
+  if (pname) pname.textContent = displayName;
+  // Show email below name
+  var pemail = el('gsProfileEmail');
+  if (pemail && FB_USER) pemail.textContent = FB_USER.email;
 
   renderGroupList();
 }
@@ -2546,6 +3718,15 @@ function renderGroupList() {
   var groups   = profile ? (profile.groups || []) : [];
 
   // Also check localStorage for any group codes
+  // Also check all league-specific stored codes
+  LEAGUES.forEach(function(l) {
+    var lc = localStorage.getItem('kap_g2_grp_' + l.id);
+    if (lc && groups.indexOf(lc) < 0) {
+      groups.push(lc);
+      if (profile) { profile.groups = groups; saveProfiles(profiles); }
+    }
+  });
+  // Legacy key
   var localCode = localStorage.getItem('kap_g2_my_grp');
   if (localCode && groups.indexOf(localCode) < 0) {
     groups.push(localCode);
@@ -2553,13 +3734,43 @@ function renderGroupList() {
   }
 
   var pgroups = el('gsProfileGroups');
-  if (pgroups) pgroups.textContent = groups.length + ' Gruppe' + (groups.length !== 1 ? 'n' : '');
+  if (pgroups) pgroups.textContent = groups.length + ' Gruppe' + (groups.length !== 1 ? 'n' : '') + ' gesamt';
+
+  // Check if user has a group for the ACTIVE league
+  var hasGrpForLeague = groups.some(function(code) {
+    var g = loadGrpLocal(code);
+    return g && g.leagueId === ACTIVE_LEAGUE.id;
+  });
+
+  if (!hasGrpForLeague) {
+    var noGrpBox = mk('div', { style: 'background:var(--bg3);border:1px solid var(--bo);border-radius:9px;padding:1.1rem;text-align:center;margin-bottom:.85rem' });
+    var lgDotEl = mk('div', { style: 'font-size:1.4rem;margin-bottom:.35rem' });
+    lgDotEl.textContent = ACTIVE_LEAGUE.id === 'wm2026' ? '🌍' : ACTIVE_LEAGUE.id === 'bl2' ? '🇩🇪' : ACTIVE_LEAGUE.id === 'multi' ? '🌐' : '🏆';
+    ap(noGrpBox, lgDotEl);
+    var noGrpTitle = mk('div', { style: 'font-size:.82rem;font-weight:700;margin-bottom:.3rem;color:var(--tx)' });
+    noGrpTitle.textContent = 'Keine Gruppe für ' + ACTIVE_LEAGUE.name;
+    ap(noGrpBox, noGrpTitle);
+    var noGrpSub = mk('div', { style: 'font-size:.72rem;color:var(--tx2);margin-bottom:.75rem;line-height:1.5' });
+    noGrpSub.textContent = 'Erstelle eine neue Gruppe für ' + ACTIVE_LEAGUE.name + ' oder tritt mit einem Code bei.';
+    ap(noGrpBox, noGrpSub);
+    var quickCreate = mk('button', { style: 'background:var(--ac);color:#08090d;border:none;border-radius:7px;padding:.55rem 1.2rem;font-size:.78rem;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;margin-right:.45rem' });
+    quickCreate.textContent = '+ Gruppe erstellen';
+    quickCreate.addEventListener('click', function() {
+      // Pre-select current league in dropdown
+      var sel = el('gLeagueSelect');
+      if (sel) sel.value = ACTIVE_LEAGUE.id;
+      showCreateGroup();
+    });
+    var quickJoin = mk('button', { style: 'background:none;border:1px solid rgba(71,200,255,.3);color:var(--blue);border-radius:7px;padding:.55rem 1rem;font-size:.78rem;cursor:pointer;font-family:DM Sans,sans-serif' });
+    quickJoin.textContent = 'Code eingeben';
+    quickJoin.addEventListener('click', showJoinGroup);
+    ap(noGrpBox, quickCreate);
+    ap(noGrpBox, quickJoin);
+    ap(list, noGrpBox);
+  }
 
   if (!groups.length) {
-    var empty = mk('div', { style: 'color:var(--tx3);font-size:.76rem;text-align:center;padding:1.5rem 0;background:var(--bg3);border-radius:8px' });
-    empty.textContent = 'Noch in keiner Gruppe. Erstelle eine oder tritt einer bei.';
-    ap(list, empty);
-    return;
+    return; // already showed the no-group box above
   }
 
   // Load each group and display
@@ -2569,7 +3780,16 @@ function renderGroupList() {
     row.id = 'gi_' + code;
 
     var info = mk('div', { style: 'flex:1;min-width:0' });
-    var gname = mk('div', { cls: 'group-item-name' }, g ? g.name : '(' + code + ')');
+    var gname = mk('div', { cls: 'group-item-name' });
+    if (g && g.leagueId) {
+      var grpLg2 = LEAGUES.find(function(l) { return l.id === g.leagueId; });
+      if (grpLg2) {
+        var lgDot = mk('span', { style: 'display:inline-block;width:8px;height:8px;border-radius:50%;background:'+grpLg2.color+';margin-right:.4rem;flex-shrink:0;vertical-align:middle' });
+        ap(gname, lgDot);
+      }
+    }
+    var nameSpan = mk('span', {}, g ? g.name : '(' + code + ')');
+    ap(gname, nameSpan);
     ap(info, gname);
 
     var meta = mk('div', { cls: 'group-item-md' });
@@ -2620,14 +3840,17 @@ function leaveGroupByCode(code) {
     profile.groups = (profile.groups || []).filter(function(c) { return c !== code; });
     saveProfiles(profiles);
   }
-  if (localStorage.getItem('kap_g2_my_grp') === code) {
-    localStorage.removeItem('kap_g2_my_grp');
-  }
+  // Clear for any league that has this code
+  LEAGUES.forEach(function(l) {
+    if (localStorage.getItem('kap_g2_grp_' + l.id) === code) {
+      localStorage.removeItem('kap_g2_grp_' + l.id);
+    }
+  });
   renderGroupList();
 }
 
 function enterGroup(code) {
-  localStorage.setItem('kap_g2_my_grp', code);
+  setActiveGrpCode(code); // liga-spezifisch speichern
 
   // Try Firebase first, then local
   var loadFn = G_FB_URL
@@ -2647,6 +3870,21 @@ function enterGroup(code) {
     }
     GRP = g;
     saveGrp(GRP);
+
+    // Switch to group's league AND save code under league-specific key
+    if (g.leagueId) {
+      var grpLeague = LEAGUES.find(function(l) { return l.id === g.leagueId; });
+      if (grpLeague) {
+        ACTIVE_LEAGUE = grpLeague;
+        try { localStorage.setItem('fb_active_league', grpLeague.id); } catch(_) {}
+        // Save group code under the correct league key NOW
+        localStorage.setItem('kap_g2_grp_' + grpLeague.id, code);
+        updateLeagueBtn();
+        updateNavForLeague(grpLeague);
+        var lBtn = el('leagueBtn');
+        if (lBtn) lBtn.title = 'Liga: ' + grpLeague.name;
+      }
+    }
 
     // Register group in profile
     var profiles = getProfiles();
@@ -2678,7 +3916,7 @@ function showJoinGroup() {
 var GRP      = null;
 var G_ME     = null;
 var G_SLIP   = [];
-var G_FB_URL = '';        // Firebase DB root URL
+var G_FB_URL = 'https://freebet-1-default-rtdb.europe-west1.firebasedatabase.app'; // Fest eingetragen
 var G_UNSUB  = null;      // Polling interval handle
 var START_BAL = 1000;
 
@@ -2844,57 +4082,20 @@ function gFmt(n) {
 }
 
 // ── Init ─────────────────────────────────────────────────
-function initGroupTab() {
-  loadSavedFbUrl();
 
-  // Check if user is logged in
-  var session = getSession();
-  if (!session || !session.name) {
-    // Not logged in – show login screen
-    showGroupSetup();
-    el('gsLogin').style.display  = 'block';
-    el('gsGroups').style.display = 'none';
-    return;
-  }
-
-  G_ME = session.name;
-  localStorage.setItem('kap_g2_my_name', G_ME);
-
-  // Check if user was in a group
-  var code = localStorage.getItem('kap_g2_my_grp');
-  if (code) {
-    // Re-enter last group automatically
-    var loadFn = G_FB_URL
-      ? fbGet('groups/' + code).catch(function() { return loadGrpLocal(code); })
-      : Promise.resolve(loadGrpLocal(code));
-
-    loadFn.then(function(g) {
-      if (g && g.members) {
-        GRP = g; G_ME = session.name;
-        if (!GRP.members[G_ME]) GRP.members[G_ME] = { balance: START_BAL, history: [] };
-        saveGrpLocal(GRP);
-        showGroupMain();
-      } else {
-        // Group gone – show groups screen
-        showGroupSetup();
-        showGroupsScreen();
-      }
-    }).catch(function() {
-      var local = loadGrpLocal(code);
-      if (local && local.members) {
-        GRP = local; G_ME = session.name;
-        showGroupMain();
-      } else {
-        showGroupSetup();
-        showGroupsScreen();
-      }
-    });
-  } else {
-    // Logged in but no active group – show group list
-    showGroupSetup();
-    showGroupsScreen();
-  }
+// Liga-spezifischer Group-Key
+function grpKey2(leagueId) {
+  return 'kap_g2_grp_' + (leagueId || ACTIVE_LEAGUE.id);
 }
+function getActiveGrpCode() {
+  return localStorage.getItem(grpKey2());
+}
+function setActiveGrpCode(code) {
+  if (code) localStorage.setItem(grpKey2(), code);
+  else localStorage.removeItem(grpKey2());
+}
+
+
 
 function showGroupSetup() {
   el('groupSetup').style.display = 'block';
@@ -2907,17 +4108,19 @@ function showGroupSetup() {
 
 // ── Create / Join ─────────────────────────────────────────
 function createGroup() {
-  var name  = G_ME || '';
+  var name  = G_ME || (FB_USER && (FB_USER.displayName || FB_USER.email.split('@')[0])) || '';
   var gname = (el('gNewName') && el('gNewName').value.trim()) || '';
   if (!name)  { alert('Bitte zuerst einloggen.'); return; }
   if (!gname) { alert('Bitte einen Gruppennamen eingeben.'); return; }
 
   var code = genCode();
+  var leagueId = (el('gLeagueSelect') && el('gLeagueSelect').value) || 'bl1';
   var g = {
     code: code, name: gname,
     members: {}, slips: [],
     created: new Date().toISOString(),
     creator: name,
+    leagueId: leagueId,
     settings: { startBalance: START_BAL, minStake: 5, maxStake: 0 }
   };
   g.members[name] = { balance: START_BAL, history: [] };
@@ -2933,7 +4136,7 @@ function createGroup() {
     });
   }
   saveGrpLocal(g);
-  localStorage.setItem('kap_g2_my_grp', code);
+  localStorage.setItem('kap_g2_grp_' + leagueId, code); // liga-spezifisch
 
   // Register group in profile
   var profiles = getProfiles();
@@ -2973,7 +4176,7 @@ function joinGroup() {
     GRP  = g;
     G_ME = name;
     saveGrp(g);
-    localStorage.setItem('kap_g2_my_grp', code);
+    setActiveGrpCode(code); // liga-spezifisch
     localStorage.setItem('kap_g2_my_name', name);
 
     // Register group in profile
@@ -3027,7 +4230,7 @@ function leaveGroup() {
   if (!confirm('Gruppe verlassen?\nDeine Scheine bleiben erhalten.')) return;
   var code = GRP ? GRP.code : null;
   if (code) leaveGroupByCode(code);
-  localStorage.removeItem('kap_g2_my_grp');
+  setActiveGrpCode(null); // liga-spezifisch löschen
   GRP = null; G_SLIP = [];
   stopCountdownTimer();
   if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
@@ -3053,6 +4256,15 @@ function showGroupMain() {
   el('gGroupName').textContent     = GRP.name;
   el('gGroupCode').textContent     = GRP.code;
   el('gMyNameDisplay').textContent = G_ME;
+  // Show group's league in the topbar
+  if (GRP && GRP.leagueId) {
+    var grpLgShow = LEAGUES.find(function(l){ return l.id === GRP.leagueId; });
+    var lgBadge = el('gGroupLeagueBadge');
+    if (lgBadge && grpLgShow) {
+      lgBadge.textContent = grpLgShow.name;
+      lgBadge.style.color = grpLgShow.color;
+    }
+  }
 
   // Start live sync (every 10 seconds)
   if (G_UNSUB) clearInterval(G_UNSUB);
@@ -3421,7 +4633,6 @@ function renderGMatchList() {
   list.innerHTML = '';
   var canBet = canStillBet();
 
-  // Nur aktueller Spieltag
   var curMatches = ST.matchesCur && ST.matchesCur.length ? ST.matchesCur : [];
   if (!curMatches.length) {
     ap(list, mk('div', { style: 'color:var(--tx3);font-size:.74rem;padding:.8rem 0' }, 'Keine Spiele für diesen Spieltag.'));
@@ -3429,58 +4640,210 @@ function renderGMatchList() {
   }
 
   var tipLabels2 = {
-    home:'1 Heimsieg', draw:'X Unentschieden', away:'2 Auswärtssieg',
-    '1x':'1X (H/X)', 'x2':'X2 (X/A)', '12':'12 (H/A)',
-    o25:'Über 2,5 Tore', u25:'Unter 2,5 Tore',
-    o35:'Über 3,5 Tore', u35:'Unter 3,5 Tore',
-    btts:'Beide treffen', nbtts:'Nicht beide treffen'
+    home:'1 Heim', draw:'X Unent.', away:'2 Auswärts',
+    '1x':'1X', 'x2':'X2', '12':'12',
+    o25:'Über 2,5', u25:'Unter 2,5',
+    o35:'Über 3,5', u35:'Unter 3,5',
+    btts:'Beide treffen', nbtts:'Kein BTTS'
   };
 
   curMatches.forEach(function(m) {
     var hN = m.team1 ? (m.team1.teamName || '?') : '?';
     var aN = m.team2 ? (m.team2.teamName || '?') : '?';
+    var hS = hN.slice(0,3).toUpperCase();
+    var aS = aN.slice(0,3).toUpperCase();
     var pr = calcProbs(m.matchID || 0, hN, aN);
     var dt = m.matchDateTime ? new Date(m.matchDateTime) : null;
-    var dStr = dt ? dt.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+    var dStr = dt ? dt.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
 
     var inSlip = G_SLIP.some(function(s) { return s.matchID === m.matchID; });
-    var card   = mk('div', { cls: 'slip-match-row' + (inSlip ? ' in-slip' : '') });
+    var card   = mk('div', { cls: 'gmc' + (inSlip ? ' gmc-in-slip' : '') });
     card.id    = 'gm' + m.matchID;
     if (!canBet) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
 
-    var top = mk('div', { cls: 'smr-top' });
-    ap(top, mk('div', { cls: 'smr-teams' }, hN + ' – ' + aN));
-    ap(top, mk('div', { cls: 'smr-date' }, dStr));
+    // ── TOP: teams ─────────────────────────────────────────────────────────
+    var top = mk('div', { cls: 'gmc-top' });
+
+    function makeTeamEl(name, initials, apiUrl, isRight) {
+      var side = mk('div', { cls: 'gmc-team' + (isRight ? ' r' : '') });
+      // Flag/crest
+      var crestUrl = getCrest(name, apiUrl);
+      if (crestUrl) {
+        var wrap = mk('div', { cls: 'gmc-flag' });
+        var img  = mk('img', { style: 'max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:2px', src: crestUrl, alt: name });
+        img.onerror = function() { wrap.innerHTML = ''; wrap.className = 'gmc-flag-fb'; wrap.textContent = initials.slice(0,2); };
+        ap(wrap, img); ap(side, wrap);
+      } else {
+        var fb = mk('div', { cls: 'gmc-flag-fb' }, initials.slice(0,2));
+        ap(side, fb);
+      }
+      ap(side, mk('span', { cls: 'gmc-name' }, name));
+      return side;
+    }
+
+    ap(top, makeTeamEl(hN, hS, m.team1 ? m.team1.teamIconUrl : null, false));
+
+    // Mid
+    var mid = mk('div', { cls: 'gmc-mid' });
+    if (dt) ap(mid, mk('div', { cls: 'gmc-time' }, dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr'));
+    var isFinished = m.matchIsFinished;
+    var score = null;
+    if (isFinished && m.matchResults && m.matchResults.length) {
+      var r = m.matchResults.find(function(x){return x.resultTypeID===2;}) || m.matchResults[0];
+      if (r) score = r.pointsTeam1 + ':' + r.pointsTeam2;
+    }
+    if (score) ap(mid, mk('div', { cls: 'gmc-score' }, score));
+    else       ap(mid, mk('div', { cls: 'gmc-vs' }, 'VS'));
+    if (dt) ap(mid, mk('div', { cls: 'gmc-date' }, dt.toLocaleDateString('de-DE',{day:'numeric',month:'short'})));
+    ap(top, mid);
+
+    ap(top, makeTeamEl(aN, aS, m.team2 ? m.team2.teamIconUrl : null, true));
     ap(card, top);
 
+    // ── ODDS: primary 3 buttons (1 / X / 2) ─────────────────────────────
     var tipIds = ['home','draw','away','1x','x2','12','o25','u25','o35','u35','btts','nbtts'];
-    var mainTips = tipIds.map(function(id) {
-      return { id: id, prob: calcTipProb(id, pr.wH, pr.wD, pr.wA, pr.xH, pr.xA) };
+    var allTips = tipIds.map(function(id) {
+      return { id: id, prob: calcTipProb(id, pr.wH, pr.wD, pr.wA, pr.xH, pr.xA), lbl: tipLabels2[id] };
     });
+    var primaryTips = allTips.slice(0, 3); // 1 X 2
+    var moreTips    = allTips.slice(3);    // rest
 
-    var tips = mk('div', { cls: 'smr-tips' });
-    mainTips.forEach(function(t) {
-      var odds   = gOdds(t.prob);
+    var oddsRow = mk('div', { cls: 'gmc-odds' });
+    primaryTips.forEach(function(t) {
+      var odds  = calcOdds(t.prob);
       var curTip = G_SLIP.find(function(s) { return s.matchID === m.matchID; });
       var isSel  = curTip && curTip.tipId === t.id;
-      var btn    = mk('button', { cls: 'tip-btn' + (isSel ? ' sel' : '') });
-      var l1 = mk('span', {}, tipLabels2[t.id] || t.id);
-      var l2 = mk('span', { style: 'margin-left:.28rem;font-family:DM Mono,monospace;font-size:.62rem;color:' + (isSel?'var(--tx)':'var(--ac)') });
-      l2.textContent = String(odds);
-      ap(btn, l1); ap(btn, l2);
+      var btn   = mk('div', { cls: 'gmc-odd-btn' + (isSel ? ' sel' : '') });
+      ap(btn, mk('div', { cls: 'gmc-odd-lbl' }, t.lbl));
+      ap(btn, mk('div', { cls: 'gmc-odd-val' }, String(odds)));
       if (canBet) {
-      (function(mid, tipId, tipLbl, prob, hn, an, ds) {
-        btn.addEventListener('click', function() {
-          gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
-        });
-      })(m.matchID, t.id, tipLabels2[t.id]||t.id, t.prob, hN, aN, dStr);
+        (function(mid, tipId, tipLbl, prob, hn, an, ds, odds2) {
+          btn.addEventListener('click', function() {
+            gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
+          });
+        })(m.matchID, t.id, tipLabels2[t.id]||t.id, t.prob, hN, aN, dStr);
       }
-      ap(tips, btn);
+      ap(oddsRow, btn);
     });
-    ap(card, tips);
+    ap(card, oddsRow);
+
+    // ── EXPAND BAR ───────────────────────────────────────────────────────
+    var expandBar = mk('div', { cls: 'gmc-expand' });
+
+    var moreBtn = mk('button', { cls: 'gmc-expand-btn' });
+    ap(moreBtn, mk('span', {}, 'Mehr Märkte'));
+    var moreArr = mk('span', { cls: 'gmc-expand-arr' }, '▼');
+    ap(moreBtn, moreArr);
+
+    var statsBtn = mk('button', { cls: 'gmc-stats-btn' }, '📊 Stats');
+
+    ap(expandBar, moreBtn);
+    ap(expandBar, statsBtn);
+    ap(card, expandBar);
+
+    // ── MORE TIPS (hidden by default) ────────────────────────────────────
+    var morePanel = mk('div', { cls: 'gmc-more' });
+    var moreGrid  = mk('div', { cls: 'gmc-more-grid' });
+    moreTips.forEach(function(t) {
+      var odds  = calcOdds(t.prob);
+      var curTip = G_SLIP.find(function(s) { return s.matchID === m.matchID; });
+      var isSel  = curTip && curTip.tipId === t.id;
+      var btn   = mk('div', { cls: 'gmc-odd-btn' + (isSel ? ' sel' : '') });
+      ap(btn, mk('div', { cls: 'gmc-odd-lbl' }, t.lbl));
+      ap(btn, mk('div', { cls: 'gmc-odd-val' }, String(odds)));
+      if (canBet) {
+        (function(mid, tipId, tipLbl, prob, hn, an, ds) {
+          btn.addEventListener('click', function() {
+            gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
+          });
+        })(m.matchID, t.id, tipLabels2[t.id]||t.id, t.prob, hN, aN, dStr);
+      }
+      ap(moreGrid, btn);
+    });
+    ap(morePanel, moreGrid);
+    ap(card, morePanel);
+
+    // ── STATS MINI PANEL ────────────────────────────────────────────────
+    var statsPanel = mk('div', { cls: 'gmc-stats' });
+
+    // Prob bar
+    var barWrap2 = mk('div', { cls: 'gmc-prob-bar' });
+    ap(barWrap2, mk('div',{style:'width:'+pr.wH+'%;height:100%;float:left;background:var(--win)'}));
+    ap(barWrap2, mk('div',{style:'width:'+pr.wD+'%;height:100%;float:left;background:var(--draw)'}));
+    ap(barWrap2, mk('div',{style:'width:'+pr.wA+'%;height:100%;float:left;background:var(--loss)'}));
+    ap(statsPanel, barWrap2);
+    var probRow2 = mk('div',{style:'display:flex;justify-content:space-between;font-size:.64rem;margin:.18rem 0 .45rem'});
+    ap(probRow2, mk('span',{style:'color:var(--win)'},hN+' '+pr.wH+'%'));
+    ap(probRow2, mk('span',{style:'color:var(--draw)'},'X '+pr.wD+'%'));
+    ap(probRow2, mk('span',{style:'color:var(--loss)'},aN+' '+pr.wA+'%'));
+    ap(statsPanel, probRow2);
+
+    // Form badges
+    var hId3 = m.team1 ? (m.team1.teamId||m.team1.teamID) : null;
+    var aId3 = m.team2 ? (m.team2.teamId||m.team2.teamID) : null;
+    var hFm  = hId3 ? (FORM_CACHE[hId3]||FORM_CACHE['name_'+hN]||'') : FORM_CACHE['name_'+hN]||'';
+    var aFm  = aId3 ? (FORM_CACHE[aId3]||FORM_CACHE['name_'+aN]||'') : FORM_CACHE['name_'+aN]||'';
+    if (hFm || aFm) {
+      var fmRow2 = mk('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;gap:.3rem'});
+      function mkFm(form) {
+        var w=mk('div',{style:'display:flex;gap:2px'});
+        for(var fi=0;fi<5;fi++){
+          var l=form[fi]||'';
+          var col=l==='W'?'var(--win)':l==='L'?'var(--loss)':l==='D'?'var(--draw)':'var(--bg3)';
+          var fb=mk('div',{style:'width:16px;height:16px;border-radius:3px;background:'+col+';display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;color:#08090d'});
+          if(l) fb.textContent=l;
+          ap(w,fb);
+        }
+        return w;
+      }
+      ap(fmRow2,mkFm(hFm));
+      ap(fmRow2,mk('span',{style:'font-size:.6rem;color:var(--tx3);flex-shrink:0'},'Form'));
+      ap(fmRow2,mkFm(aFm));
+      ap(statsPanel,fmRow2);
+    }
+
+    // Stats: 3 blocks (xG / Ü2.5 / BTTS)
+    var o25pv = calcTipProb('o25',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    var bttsv = calcTipProb('btts',pr.wH,pr.wD,pr.wA,pr.xH,pr.xA);
+    var sgv=mk('div',{style:'display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:.3rem'});
+    function sbv(lbl,v1,v2){
+      var b=mk('div',{style:'background:var(--bg3);border-radius:5px;padding:.32rem .4rem;text-align:center'});
+      ap(b,mk('div',{style:'font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px'},lbl));
+      var vr=mk('div',{style:'display:flex;justify-content:space-between;align-items:center'});
+      ap(vr,mk('span',{style:'font-size:.78rem;font-weight:700;color:var(--win)'},String(v1)));
+      ap(vr,mk('span',{style:'font-size:.78rem;font-weight:700;color:var(--loss)'},String(v2)));
+      ap(b,vr);return b;
+    }
+    ap(sgv,sbv('xG',pr.xH,pr.xA));
+    ap(sgv,sbv('Ü2.5',o25pv+'%',(100-o25pv)+'%'));
+    ap(sgv,sbv('BTTS',bttsv+'%',(100-bttsv)+'%'));
+    ap(statsPanel,sgv);
+    var hStv=teamStat(hN,hId3),aStv=teamStat(aN,aId3);
+    if(hStv||aStv){
+      var ppv=mk('div',{style:'display:flex;justify-content:space-between;font-size:.65rem;margin-top:.3rem'});
+      ap(ppv,mk('span',{style:'color:var(--tx2)'},hStv?'#'+teamRank(hStv)+' · '+hStv.points+'Pts':'–'));
+      ap(ppv,mk('span',{style:'color:var(--tx3)'},'Tabelle'));
+      ap(ppv,mk('span',{style:'color:var(--tx2);text-align:right'},aStv?aStv.points+'Pts · #'+teamRank(aStv):'–'));
+      ap(statsPanel,ppv);
+    }
+    ap(card, statsPanel);
+
+    // ── Event listeners for expand/stats ─────────────────────────────────
+    (function(mp, sp, arr, sBtn) {
+      moreBtn.addEventListener('click', function() {
+        mp.classList.toggle('open');
+        arr.textContent = mp.classList.contains('open') ? '▲' : '▼';
+      });
+      sBtn.addEventListener('click', function() {
+        sp.classList.toggle('open');
+        sBtn.textContent = sp.classList.contains('open') ? '📊 Stats ▲' : '📊 Stats';
+      });
+    })(morePanel, statsPanel, moreArr, statsBtn);
+
     ap(list, card);
   });
 }
+
 
 function gToggleTip(matchID, tipId, tipLbl, prob, hN, aN, dStr) {
   var idx = G_SLIP.findIndex(function(s) { return s.matchID === matchID; });
@@ -3582,6 +4945,12 @@ function gClearSlip() { G_SLIP = []; renderGMatchList(); renderGSlip(); }
 // ── Submit ────────────────────────────────────────────────
 function gSubmitSlip() {
   if (!G_SLIP.length) return;
+  // Validate that current league matches group's league
+  if (GRP && GRP.leagueId && ACTIVE_LEAGUE && GRP.leagueId !== ACTIVE_LEAGUE.id) {
+    var grpLg = LEAGUES.find(function(l){ return l.id === GRP.leagueId; });
+    alert('Diese Gruppe ist fuer ' + (grpLg ? grpLg.name : GRP.leagueId) + '. Bitte wechsle zur richtigen Liga.');
+    return;
+  }
   if (!canStillBet()) {
     if (isPastDeadline()) { alert('Die Abgabefrist ist abgelaufen. Wetten koennen nur bis Anpfiff des ersten Spiels abgegeben werden.'); }
     else { alert('Du hast diesen Spieltag bereits einen Schein abgegeben.'); }
@@ -4129,7 +5498,7 @@ function adminDeleteGroup() {
 
   // Delete local
   try { localStorage.removeItem(grpKey(GRP.code)); } catch(_) {}
-  localStorage.removeItem('kap_g2_my_grp');
+  setActiveGrpCode(null);
   localStorage.removeItem('kap_g2_my_name');
 
   GRP = null; G_ME = null; G_SLIP = [];
@@ -4277,23 +5646,26 @@ loadSlipsFromIDB(function(recovered) {
   if (recovered.length) saveSlips(recovered);
 });
 
-loadBL().then(function() {
+initFirebaseAuth();
+loadSavedLeague();
+loadCurrentLeague().then(function() {
   renderMatches();
-  loadTable();
-  loadSeasonForm().then(function() {
-    // Re-render table with real form data
-    renderTable();
-    // Re-render detail panel if a match is selected
-    if (ST.sel) {
-      var pr = calcProbs(ST.sel.matchID || 0,
-        ST.sel.team1 ? ST.sel.team1.teamName : '',
-        ST.sel.team2 ? ST.sel.team2.teamName : '');
-      selectMatch(ST.sel, pr);
-    }
-  });
+  renderSlipMatchList(); // update tracker with loaded matches
+  if (ACTIVE_LEAGUE.hasTable) {
+    loadSeasonForm().then(function() {
+      renderTable();
+      renderMatches(); // re-render with form data
+      if (ST.sel) {
+        var pr = calcProbs(ST.sel.matchID || 0,
+          ST.sel.team1 ? ST.sel.team1.teamName : '',
+          ST.sel.team2 ? ST.sel.team2.teamName : '');
+        selectMatch(ST.sel, pr);
+      }
+    });
+  }
 }).catch(function(e) {
   console.warn('Ladefehler:', e.message);
-  showNotice('OpenLigaDB nicht erreichbar – ' + e.message);
+  showNotice(e.message);
   if (typeof location !== 'undefined' && location.protocol === 'file:') {
     setTimeout(function() { if (!ST.matches.length) doReload(); }, 3500);
   }
