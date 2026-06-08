@@ -892,7 +892,7 @@ nav button.active{background:var(--bg4);color:var(--ac)}
         </div>
         <!-- WM / Multi content -->
         <div id="wmContent" style="display:none"></div>
-        <div style="display:flex;gap:.9rem;margin-top:.55rem;font-size:.64rem;color:var(--tx3)">
+        <div id="tblLegend" style="display:flex;gap:.9rem;margin-top:.55rem;font-size:.64rem;color:var(--tx3)">
           <span><span style="display:inline-block;width:7px;height:7px;background:#1a2980;border-radius:1px;margin-right:3px"></span>Champions League</span>
           <span><span style="display:inline-block;width:7px;height:7px;background:#e86d00;border-radius:1px;margin-right:3px"></span>Europa League</span>
           <span><span style="display:inline-block;width:7px;height:7px;background:var(--loss);border-radius:1px;margin-right:3px"></span>Abstieg</span>
@@ -1123,7 +1123,8 @@ nav button.active{background:var(--bg4);color:var(--ac)}
             <div style="font-size:.78rem;font-weight:600" id="gMyNameDisplay">–</div>
           </div>
           <button id="gAdminToggleBtn" onclick="toggleAdminPanel()" style="display:none;background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.25);color:var(--ac);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">⚙️ Admin</button>
-          <button onclick="leaveGroup()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Verlassen</button>
+          <button id="gDeleteBtn" onclick="adminDeleteGroup()" style="display:none;background:rgba(255,90,90,.1);border:1px solid rgba(255,90,90,.3);color:var(--loss);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">🗑 Löschen</button>
+          <button onclick="leaveGroup()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.26rem .58rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Zurück</button>
         </div>
       </div>
 
@@ -2658,9 +2659,9 @@ function selectMatch(m, pr) {
 // ── Table ────────────────────────────────────────────────────────────────────
 
 function renderWMGroupPlan() {
-  var tbody = el('tblBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
+  var host = el('wmContent');
+  if (!host) return;
+  host.innerHTML = '';
 
   // Update header
   var titleEl = el('tableSectionTitle');
@@ -2680,7 +2681,7 @@ function renderWMGroupPlan() {
 
   var allWmMatches = window._wmAllMatches || ST.matches;
   if (!allWmMatches.length) {
-    ap(tbody, mk('div',{style:'padding:.85rem;text-align:center;color:var(--tx2);font-size:.78rem'},'Keine WM-Daten geladen.'));
+    ap(host, mk('div',{style:'padding:.85rem;text-align:center;color:var(--tx2);font-size:.78rem'},'Keine WM-Daten geladen.'));
     return;
   }
 
@@ -2828,22 +2829,27 @@ function renderWMGroupPlan() {
     ap(wrap,bracket);
   }
 
-  ap(tbody, wrap);
+  ap(host, wrap);
 }
 
 
 function renderTable() {
   var tbody = el('tblBody');
-  // Show table, hide WM content
   var tblWrap3 = el('tblTableWrap');
   var wmDiv2   = el('wmContent');
-  if (tblWrap3) tblWrap3.style.display = '';
-  if (wmDiv2)   wmDiv2.style.display   = 'none';
-  // WM/Multi mode: show schedule overview instead of table
+  var legend   = el('tblLegend');
+  // WM/Multi: eigene Gruppen-Ansicht – Liga-Tabelle (inkl. Kopfzeile) + Legende ausblenden
   if (!ACTIVE_LEAGUE.hasTable) {
+    if (tblWrap3) tblWrap3.style.display = 'none';
+    if (legend)   legend.style.display   = 'none';
+    if (wmDiv2)   wmDiv2.style.display   = '';
     renderWMGroupPlan();
     return;
   }
+  // Liga-Modus: Tabelle + Legende zeigen, WM-Inhalt aus
+  if (tblWrap3) tblWrap3.style.display = '';
+  if (legend)   legend.style.display   = '';
+  if (wmDiv2)   wmDiv2.style.display   = 'none';
   if (!ST.table.length) return;
   // Reset header to table mode
   var titleEl = el('tableSectionTitle');
@@ -6117,15 +6123,18 @@ function toggleAdminPanel() {
 function renderAdminPanel() {
   var panel    = el('gAdminPanel');
   var adminBtn = el('gAdminToggleBtn');
+  var delBtnHdr = el('gDeleteBtn');
   if (!panel) return;
 
   if (!isAdmin()) {
     panel.style.display = 'none';
     if (adminBtn) adminBtn.style.display = 'none';
+    if (delBtnHdr) delBtnHdr.style.display = 'none';
     return;
   }
   // Show the admin toggle button in topbar
   if (adminBtn) adminBtn.style.display = 'inline-block';
+  if (delBtnHdr) delBtnHdr.style.display = 'inline-block';
   // Keep panel hidden until toggled (less cluttered)
   // but show it if it was already open
   // Show panel by default for admin (they need to see it)
@@ -6338,13 +6347,13 @@ function adminDeleteGroup() {
     fbUserGroupRemove(delCode);
     try { localStorage.removeItem(grpKey(delCode)); } catch(_) {}
     clearGroupPointer(delCode);
-    localStorage.removeItem('kap_g2_my_name');
-    GRP = null; G_ME = null; G_SLIP = [];
+    GRP = null; G_SLIP = [];
     stopCountdownTimer();
     if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
     el('groupSetup').style.display = 'block';
     el('groupMain').style.display  = 'none';
     showSuccess('Gruppe "' + gname + '" wurde gelöscht.');
+    showGroupsScreen();
   });
 }
 
