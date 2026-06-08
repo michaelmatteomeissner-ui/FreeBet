@@ -1227,6 +1227,10 @@ nav button.active{background:var(--bg4);color:var(--ac)}
                 <span class="admin-label">Höchsteinsatz (€)</span>
                 <input class="admin-input" id="aMaxStake" type="number" min="10" step="10" value="0" placeholder="0=kein Limit">
               </div>
+              <div class="admin-row">
+                <span class="admin-label">Scheine pro Spieltag</span>
+                <input class="admin-input" id="aMaxSlips" type="number" min="0" step="1" value="1" placeholder="0=unbegrenzt">
+              </div>
               <div id="aSettingsMsg" style="font-size:.67rem;color:var(--win);display:none;margin-top:.3rem">Gespeichert!</div>
             </div>
 
@@ -1860,15 +1864,13 @@ function loadWM2026() {
     realUpcoming.sort(function(a,b){ return new Date(a.matchDateTime||0)-new Date(b.matchDateTime||0); });
     // WM Gruppenspieltage:
     // Spieltag 1: 11-16 Juni | Spieltag 2: 17-23 Juni | Spieltag 3: 24-28 Juni
-    // WM 2026 Gruppenspieltage (alle Zeiten UTC):
-    // Spieltag 1: 11.-18. Juni, letztes Spiel 18.06 04:00 MESZ = 02:00 UTC
-    // Spieltag 2: 18.-24. Juni, erstes Spiel 18.06 18:00 MESZ = 16:00 UTC
-    //             letztes Spiel: 24.06 04:00 MESZ = 02:00 UTC
-    // Spieltag 3: 24.-27. Juni, ab 18.06 18:00 MESZ = 16:00 UTC
+    // WM 2026 Gruppenspieltage (laut Spielplan, Zeiten in UTC):
+    // Spieltag 1: 11.06 – 18.06 | Spieltag 2: 18.06 – 24.06 | Spieltag 3: 24.06 – 28.06
+    // Trennung an überlappenden Tagen über die Uhrzeit (UTC 09:00).
     var wmMatchdays = [
       { name:'Spieltag 1', start: new Date('2026-06-11T00:00:00Z'), end: new Date('2026-06-18T08:59:59Z') },
       { name:'Spieltag 2', start: new Date('2026-06-18T09:00:00Z'), end: new Date('2026-06-24T08:59:59Z') },
-      { name:'Spieltag 3', start: new Date('2026-06-24T09:00:00Z'), end: new Date('2026-06-27T23:59:59Z') },
+      { name:'Spieltag 3', start: new Date('2026-06-24T09:00:00Z'), end: new Date('2026-06-28T23:59:59Z') },
     ];
     var now2 = new Date();
     var curWmMd = null;
@@ -1888,7 +1890,20 @@ function loadWM2026() {
       if (el('stMd')) el('stMd').textContent = curWmMd.name;
       if (el('mdBadge')) el('mdBadge').textContent = 'WM 2026 · ' + curWmMd.name;
     }
-    if (!forTracker || !forTracker.length) forTracker = realUpcoming.slice(0, 24);
+    if (!forTracker || !forTracker.length) {
+      // Gruppenphase vorbei -> nahtlos die aktuelle K.-o.-Runde anhand der
+      // nächsten anstehenden Partie bestimmen (z. B. Sechzehntel-, Achtelfinale …).
+      if (realUpcoming.length) {
+        var nextRound = realUpcoming[0].group || 'K.-o.-Runde';
+        forTracker = realUpcoming.filter(function(m3) { return (m3.group || '') === nextRound; });
+        if (!forTracker.length) forTracker = realUpcoming.slice(0, 16);
+        ST.curMD = nextRound;
+        if (el('stMd'))    el('stMd').textContent    = nextRound;
+        if (el('mdBadge')) el('mdBadge').textContent = 'WM 2026 · ' + nextRound;
+      } else {
+        forTracker = realMatches.slice(0, 24);
+      }
+    }
     ST.matches    = forTracker;
     ST.matchesCur = forTracker;
     if (el('stTotal')) el('stTotal').textContent = forTracker.length;
@@ -4881,7 +4896,7 @@ function createGroup() {
     creator: name,
     creatorUid: creatorUid,
     leagueId: leagueId,
-    settings: { startBalance: START_BAL, minStake: 5, maxStake: 0 }
+    settings: { startBalance: START_BAL, minStake: 5, maxStake: 0, maxSlips: 1 }
   };
   // Store member UID for security rules
   g.memberUids = {};
@@ -5181,7 +5196,26 @@ function updateTimerUI() {
   var diff = dl - now; // ms remaining
 
   if (diff <= 0) {
-    // EXPIRED
+    var isTournament = ACTIVE_LEAGUE && !ACTIVE_LEAGUE.hasTable;
+    if (isTournament) {
+      // WM/Turnier: Spieltag läuft über mehrere Tage – noch nicht angepfiffene
+      // Spiele bleiben tippbar, nur bereits begonnene sind gesperrt.
+      box.className = 'deadline-timer';
+      box.style.borderColor = '';
+      if (icon)  icon.textContent = '⏱';
+      if (label) label.textContent = 'Spieltag läuft';
+      dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '00';
+      if (dlText) dlText.textContent = 'Erster Anpfiff war bereits – kommende Spiele bleiben tippbar';
+      if (hint) {
+        hint.style.display = 'block';
+        hint.textContent = 'Bereits angepfiffene Spiele sind gesperrt; noch nicht begonnene Spiele dieses Spieltags kannst du weiterhin tippen.';
+        hint.style.color = 'var(--tx3)';
+      }
+      if (submitBtn) submitBtn.disabled = !canStillBet();
+      stopCountdownTimer();
+      return;
+    }
+    // EXPIRED (Liga: spieltagweite Sperre ab erstem Anpfiff)
     box.className = 'deadline-timer timer-done';
     if (icon)  icon.textContent = '🔒';
     if (label) label.textContent = 'Abgabe geschlossen';
@@ -5205,13 +5239,13 @@ function updateTimerUI() {
     return;
   }
 
-  // Still open
-  var mySlip = gMySlipThisMatchday();
-  if (mySlip) {
+  // Still open (vor erstem Anpfiff)
+  var limitReached = !canStillBet();
+  if (limitReached) {
     box.className = 'deadline-timer';
     box.style.borderColor = 'rgba(255,179,71,.3)';
     if (icon)  icon.textContent = '✅';
-    if (label) label.textContent = 'Schein abgegeben';
+    if (label) label.textContent = (gMaxSlips() === 1) ? 'Schein abgegeben' : 'Schein-Limit erreicht';
   } else {
     // Urgent if < 1 hour
     box.className = diff < 3600000 ? 'deadline-timer timer-urgent' : 'deadline-timer';
@@ -5219,6 +5253,7 @@ function updateTimerUI() {
     if (icon)  icon.textContent = diff < 3600000 ? '🚨' : '⏳';
     if (label) label.textContent = 'Noch Zeit für die Abgabe';
   }
+  if (submitBtn) submitBtn.disabled = limitReached;
 
   var totalSecs = Math.floor(diff / 1000);
   var days  = Math.floor(totalSecs / 86400);
@@ -5283,7 +5318,17 @@ function getMatchdayDeadline() {
   return new Date(Math.min.apply(null, times));
 }
 
+function isMatchStarted(m) {
+  // Spiel hat begonnen, sobald die aktuelle Uhrzeit die Anpfiffszeit erreicht/überschritten hat
+  if (!m || !m.matchDateTime) return false;
+  var t = parseMatchTime(m.matchDateTime);
+  return !!(t && new Date() >= t);
+}
+
 function isPastDeadline() {
+  // WM / Turnier (kein Liga-Tabellen-Modus): KEINE spieltagweite Sperre, da ein
+  // Spieltag über mehrere Tage geht. Einzelne Spiele werden pro Anpfiff gesperrt.
+  if (ACTIVE_LEAGUE && !ACTIVE_LEAGUE.hasTable) return false;
   var dl = getMatchdayDeadline();
   if (!dl) return false;
   return new Date() >= dl;
@@ -5459,10 +5504,23 @@ function gMySlipThisMatchday() {
   return GRP.slips.find(function(s) { return s.member === G_ME && s.matchday === md; }) || null;
 }
 
+function gMySlipCountThisMatchday() {
+  var md = ST.curMD;
+  if (!md || !GRP || !GRP.slips) return 0;
+  return GRP.slips.filter(function(s) { return s.member === G_ME && s.matchday === md; }).length;
+}
+
+function gMaxSlips() {
+  // Vom Admin einstellbar: Anzahl Scheine pro Spieltag (0 = unbegrenzt)
+  var c = (GRP && GRP.settings) ? GRP.settings.maxSlips : 1;
+  return (c == null) ? 1 : c;
+}
+
 function canStillBet() {
-  // Kann man noch wetten? Nur wenn: Deadline nicht abgelaufen UND noch kein Schein
+  // Spieltag-weite Sperre (Bundesliga). Bei WM/Turnier wird pro Spiel gesperrt – siehe isPastDeadline.
   if (isPastDeadline()) return false;
-  if (gMySlipThisMatchday()) return false;
+  var max = gMaxSlips();
+  if (max > 0 && gMySlipCountThisMatchday() >= max) return false;
   return true;
 }
 
@@ -5498,7 +5556,9 @@ function renderGMatchList() {
     var inSlip = G_SLIP.some(function(s) { return s.matchID === m.matchID; });
     var card   = mk('div', { cls: 'gmc' + (inSlip ? ' gmc-in-slip' : '') });
     card.id    = 'gm' + m.matchID;
-    if (!canBet) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
+    var started   = isMatchStarted(m);
+    var matchOpen = canBet && !started && !m.matchIsFinished;
+    if (!matchOpen) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
 
     // ── TOP: teams ─────────────────────────────────────────────────────────
     var top = mk('div', { cls: 'gmc-top' });
@@ -5532,6 +5592,7 @@ function renderGMatchList() {
       if (r) score = r.pointsTeam1 + ':' + r.pointsTeam2;
     }
     if (score) ap(mid, mk('div', { cls: 'gmc-score' }, score));
+    else if (started) ap(mid, mk('div', { cls: 'gmc-vs', style: 'font-size:.56rem;color:var(--tx3)' }, '⏱ LÄUFT'));
     else       ap(mid, mk('div', { cls: 'gmc-vs' }, 'VS'));
     if (dt) ap(mid, mk('div', { cls: 'gmc-date' }, dt.toLocaleDateString('de-DE',{day:'numeric',month:'short'})));
     ap(top, mid);
@@ -5555,7 +5616,7 @@ function renderGMatchList() {
       var btn   = mk('div', { cls: 'gmc-odd-btn' + (isSel ? ' sel' : '') });
       ap(btn, mk('div', { cls: 'gmc-odd-lbl' }, t.lbl));
       ap(btn, mk('div', { cls: 'gmc-odd-val' }, String(odds)));
-      if (canBet) {
+      if (matchOpen) {
         (function(mid, tipId, tipLbl, prob, hn, an, ds, odds2) {
           btn.addEventListener('click', function() {
             gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
@@ -5590,7 +5651,7 @@ function renderGMatchList() {
       var btn   = mk('div', { cls: 'gmc-odd-btn' + (isSel ? ' sel' : '') });
       ap(btn, mk('div', { cls: 'gmc-odd-lbl' }, t.lbl));
       ap(btn, mk('div', { cls: 'gmc-odd-val' }, String(odds)));
-      if (canBet) {
+      if (matchOpen) {
         (function(mid, tipId, tipLbl, prob, hn, an, ds) {
           btn.addEventListener('click', function() {
             gToggleTip(mid, tipId, tipLbl, prob, hn, an, ds);
@@ -5792,9 +5853,18 @@ function gSubmitSlip() {
   }
   if (!canStillBet()) {
     if (isPastDeadline()) { showError('Abgabefrist abgelaufen. Nur bis Anpfiff möglich.'); }
-    else { showWarning('Du hast diesen Spieltag bereits einen Schein abgegeben.'); }
+    else {
+      var mx = gMaxSlips();
+      showWarning('Schein-Limit erreicht: max. ' + mx + ' Schein(e) pro Spieltag.');
+    }
     return;
   }
+  // Bereits angepfiffene Spiele dürfen nicht (mehr) getippt werden
+  var startedBet = G_SLIP.find(function(s) {
+    var mm = (ST.matchesCur || ST.matches || []).find(function(x) { return x.matchID === s.matchID; });
+    return mm && isMatchStarted(mm);
+  });
+  if (startedBet) { showError('„' + startedBet.hN + ' – ' + startedBet.aN + '" hat bereits begonnen und kann nicht mehr getippt werden. Bitte vom Schein entfernen.'); return; }
   var stake = parseFloat((el('gStakeIn') && el('gStakeIn').value) || '0') || 0;
   var bal   = (GRP.members[G_ME] || {}).balance || 0;
   if (stake <= 0)  { showError('Bitte einen Einsatz eingeben.'); return; }
@@ -6145,6 +6215,7 @@ function renderAdminPanel() {
   if (el('aStartBal')) el('aStartBal').value = cfg.startBalance || 1000;
   if (el('aMinStake')) el('aMinStake').value = cfg.minStake || 5;
   if (el('aMaxStake')) el('aMaxStake').value = cfg.maxStake || 0;
+  if (el('aMaxSlips')) el('aMaxSlips').value = (cfg.maxSlips != null ? cfg.maxSlips : 1);
 
   // Invite link
   var inviteCode = GRP.code;
@@ -6245,13 +6316,17 @@ function adminSaveSettings() {
   var startBal = parseFloat(el('aStartBal').value) || 1000;
   var minStake = parseFloat(el('aMinStake').value) || 5;
   var maxStake = parseFloat(el('aMaxStake').value) || 0;
+  var maxSlips = parseInt(el('aMaxSlips').value, 10);
+  if (isNaN(maxSlips) || maxSlips < 0) maxSlips = 1;
 
   if (startBal < 100) { showError('Startguthaben muss mindestens 100€ sein.'); return; }
   if (minStake < 1)   { showError('Mindesteinsatz muss mindestens 1€ sein.'); return; }
 
   GRP = loadGrp(GRP.code);
-  GRP.settings = { startBalance: startBal, minStake: minStake, maxStake: maxStake };
+  GRP.settings = { startBalance: startBal, minStake: minStake, maxStake: maxStake, maxSlips: maxSlips };
   saveGrp(GRP);
+  if (typeof renderGMatchList === 'function') renderGMatchList();
+  if (typeof renderGSlip === 'function') renderGSlip();
 
   var msg = el('aSettingsMsg');
   if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
