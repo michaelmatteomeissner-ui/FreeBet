@@ -1059,7 +1059,10 @@ nav button.active{background:var(--bg4);color:var(--ac)}
               <div id="gsProfileEmail" style="font-size:.6rem;color:var(--tx3)"></div>
               <div class="profile-groups" id="gsProfileGroups">Keine Gruppen</div>
             </div>
-            <button onclick="doLogout()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.24rem .55rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Abmelden</button>
+            <div style="display:flex;flex-direction:column;gap:.3rem;flex-shrink:0">
+              <button onclick="doLogout()" style="background:none;border:1px solid var(--bo);color:var(--tx3);border-radius:5px;padding:.24rem .55rem;font-size:.67rem;cursor:pointer;font-family:'DM Sans',sans-serif">Abmelden</button>
+              <button onclick="deleteAccount()" style="background:none;border:1px solid rgba(255,90,90,.3);color:var(--loss);border-radius:5px;padding:.24rem .55rem;font-size:.62rem;cursor:pointer;font-family:'DM Sans',sans-serif">Konto löschen</button>
+            </div>
           </div>
 
           <div style="font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Meine Gruppen</div>
@@ -4073,11 +4076,86 @@ function doLogout() {
   }).catch(function(){});
 }
 
+// ── Konto vollständig löschen ────────────────────────────────────────────────
+function clearAllLocalForUser(uid, name) {
+  try {
+    saveSession(null);
+    localStorage.removeItem('kap_g2_my_name');
+    localStorage.removeItem('kap_g2_my_grp');
+    if (uid) localStorage.removeItem('kap_consent_' + uid);
+    LEAGUES.forEach(function(l) { localStorage.removeItem('kap_g2_grp_' + l.id); });
+    var profs = getProfiles();
+    if (name && profs[name]) {
+      (profs[name].groups || []).forEach(function(code) { try { localStorage.removeItem(grpKey(code)); } catch(_) {} });
+      delete profs[name];
+      saveProfiles(profs);
+    }
+  } catch(_) {}
+  GRP = null; G_SLIP = [];
+  stopCountdownTimer();
+  if (G_UNSUB) { clearInterval(G_UNSUB); G_UNSUB = null; }
+  if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
+}
+
+function deleteAccount() {
+  var user = fbAuth.currentUser;
+  if (!user) { showError('Du bist nicht angemeldet.'); return; }
+  appConfirm({
+    title:   'Konto endgültig löschen',
+    message: 'Dein Konto und alle zugehörigen Daten werden unwiderruflich gelöscht. Von dir erstellte Gruppen werden ebenfalls gelöscht, aus anderen Gruppen wirst du entfernt.\n\nDies kann nicht rückgängig gemacht werden. Fortfahren?',
+    okLabel: 'Konto löschen', danger: true
+  }).then(function(ok) {
+    if (!ok) return;
+    var uid    = user.uid;
+    var myName = G_ME;
+    showInfo('Konto wird gelöscht…');
+
+    // 1) Firebase-Daten aufräumen: eigene Gruppen löschen, aus fremden austragen
+    var cleanup = Promise.resolve();
+    if (G_FB_URL) {
+      cleanup = fbGetAuth('users/' + uid + '/groups').then(function(data) {
+        var codes = data ? Object.keys(data) : [];
+        return Promise.all(codes.map(function(code) {
+          return fbGetAuth('groups/' + code).then(function(g) {
+            if (!g) return null;
+            if (g.creatorUid === uid) {
+              return fbSetAuth('groups/' + code, null).catch(function(){});
+            }
+            var ops = [];
+            if (g.members && myName && g.members[myName]) ops.push(fbSetAuth('groups/' + code + '/members/' + myName, null).catch(function(){}));
+            if (g.memberUids && g.memberUids[uid])         ops.push(fbSetAuth('groups/' + code + '/memberUids/' + uid, null).catch(function(){}));
+            return Promise.all(ops);
+          }).catch(function(){});
+        }));
+      }).then(function() {
+        return fbSetAuth('users/' + uid, null).catch(function(){});
+      }).catch(function(){});
+    }
+
+    cleanup.then(function() {
+      // 2) Auth-Konto löschen
+      return user.delete();
+    }).then(function() {
+      // 3) Lokale Daten entfernen + zur Anmeldung
+      clearAllLocalForUser(uid, myName);
+      FB_USER = null; G_ME = null;
+      showSuccess('Dein Konto wurde gelöscht.');
+      showAuthGate('login');
+    }).catch(function(e) {
+      if (e && e.code === 'auth/requires-recent-login') {
+        // Firebase verlangt eine kürzliche Anmeldung -> ab- und wieder anmelden
+        showWarning('Aus Sicherheitsgründen bitte erneut anmelden und dann „Konto löschen" wiederholen.');
+        fbAuth.signOut().then(function() { showAuthGate('login'); }).catch(function(){});
+      } else {
+        showError('Löschen fehlgeschlagen: ' + (e && e.message ? e.message : 'Unbekannter Fehler'));
+      }
+    });
+  });
+}
+
 // initGroupTab uses Firebase Auth state
 function initGroupTab() {
   loadSavedFbUrl();
-
-  // Check Firebase Auth state
   var currentUser = fbAuth.currentUser;
   var session = getSession();
 
@@ -4252,38 +4330,79 @@ function fbUserGroupRemove(code) {
   if (!G_FB_URL || !FB_USER || !FB_USER.uid || !code) return;
   fbSetAuth('users/' + FB_USER.uid + '/groups/' + code, null).catch(function(){});
 }
-// Holt die Mitgliedschaften aus Firebase, merged sie ins lokale Profil und lädt
-// fehlende Gruppendaten nach. cb(true) wenn sich etwas geändert hat.
+// Gleicht die Gruppen geräteübergreifend mit Firebase ab (Firebase = Wahrheit):
+// - Gruppen, in denen ich Mitglied bin, werden überall geladen/angezeigt.
+// - In Firebase gelöschte oder verlassene Gruppen werden überall entfernt.
+// cb(true) wenn sich etwas geändert hat.
 function syncUserGroups(cb) {
   if (!G_FB_URL || !FB_USER || !FB_USER.uid) { if (cb) cb(false); return; }
-  fbGetAuth('users/' + FB_USER.uid + '/groups').then(function(data) {
-    var codes = data ? Object.keys(data) : [];
-    var changed = false;
+  var uid = FB_USER.uid;
+  fbGetAuth('users/' + uid + '/groups').then(function(data) {
+    var cloudCodes = data ? Object.keys(data) : [];
     var profs = getProfiles();
     if (G_ME) {
       if (!profs[G_ME]) profs[G_ME] = { groups: [] };
       if (!profs[G_ME].groups) profs[G_ME].groups = [];
-      // Firebase -> lokal: neue Gruppen ins Profil übernehmen
-      codes.forEach(function(code) {
-        if (profs[G_ME].groups.indexOf(code) < 0) { profs[G_ME].groups.push(code); changed = true; }
-      });
-      // lokal -> Firebase: bestehende Mitgliedschaften hochladen (Bootstrap alter Gruppen)
-      profs[G_ME].groups.forEach(function(code) {
-        if (codes.indexOf(code) < 0) {
-          var lg = loadGrpLocal(code);
-          if (lg && lg.members && lg.members[G_ME]) fbUserGroupAdd(code, lg.leagueId);
-        }
-      });
-      saveProfiles(profs);
     }
-    // Gruppendaten der Cloud-Codes nachladen (für Name/Liga/Stand in der Übersicht)
-    var loads = codes.map(function(code) {
-      var had = !!loadGrpLocal(code);
-      return fbGetAuth('groups/' + code)
-        .then(function(g) { if (g && g.members) { saveGrpLocal(g); if (!had) changed = true; } })
-        .catch(function(){});
+    var localCodes = (G_ME && profs[G_ME].groups) ? profs[G_ME].groups.slice() : [];
+
+    // Vereinigung aus Cloud-Mitgliedschaften, lokalem Profil und Liga-Zeigern
+    var union = {};
+    cloudCodes.forEach(function(c){ union[c] = true; });
+    localCodes.forEach(function(c){ union[c] = true; });
+    LEAGUES.forEach(function(l){ var p = localStorage.getItem('kap_g2_grp_' + l.id); if (p) union[p] = true; });
+    var allCodes = Object.keys(union);
+
+    var keep = {};
+    var changed = false;
+
+    function pruneLocal(code) {
+      try { localStorage.removeItem(grpKey(code)); } catch(_) {}
+      LEAGUES.forEach(function(l){ if (localStorage.getItem('kap_g2_grp_' + l.id) === code) localStorage.removeItem('kap_g2_grp_' + l.id); });
+      if (GRP && GRP.code === code) { GRP = null; G_SLIP = []; }
+    }
+
+    var ops = allCodes.map(function(code) {
+      return fbGetAuth('groups/' + code).then(function(g) {
+        if (g && g.members) {
+          var amMember = (g.memberUids && g.memberUids[uid]) || (G_ME && g.members[G_ME]);
+          if (amMember) {
+            saveGrpLocal(g);
+            keep[code] = (g.leagueId || true);
+            // Mitgliedschaft in der Cloud-Liste sicherstellen (Bootstrap)
+            if (cloudCodes.indexOf(code) < 0) { fbUserGroupAdd(code, g.leagueId); changed = true; }
+            // Identität selbst-heilen: eigene UID in memberUids hinterlegen
+            if (!(g.memberUids && g.memberUids[uid]) && G_ME && g.members[G_ME]) {
+              fbSetAuth('groups/' + code + '/memberUids/' + uid, true).catch(function(){});
+            }
+          } else {
+            // Gruppe existiert, ich bin (nicht mehr) Mitglied -> aus meiner Liste raus
+            if (cloudCodes.indexOf(code) >= 0) fbUserGroupRemove(code);
+            pruneLocal(code);
+            changed = true;
+          }
+        } else {
+          // In Firebase nicht (mehr) vorhanden -> überall bereinigen (gelöscht)
+          if (cloudCodes.indexOf(code) >= 0) fbUserGroupRemove(code);
+          pruneLocal(code);
+          changed = true;
+        }
+      }).catch(function() {
+        // Netzwerkfehler bei DIESEM Code -> lokalen Stand behalten, nicht löschen
+        if (loadGrpLocal(code)) keep[code] = true;
+      });
     });
-    Promise.all(loads).then(function() { if (cb) cb(changed); });
+
+    Promise.all(ops).then(function() {
+      var keptCodes = Object.keys(keep);
+      if (G_ME) {
+        var before = (profs[G_ME].groups || []).slice().sort().join(',');
+        profs[G_ME].groups = keptCodes;
+        saveProfiles(profs);
+        if (before !== keptCodes.slice().sort().join(',')) changed = true;
+      }
+      if (cb) cb(changed);
+    });
   }).catch(function() { if (cb) cb(false); });
 }
 function getSession()    { try { return JSON.parse(localStorage.getItem('fb_session')  || 'null'); } catch(_) { return null; } }
@@ -4345,20 +4464,27 @@ function renderGroupList() {
   var profile  = profiles[G_ME];
   var groups   = profile ? (profile.groups || []) : [];
 
-  // Also check localStorage for any group codes
-  // Also check all league-specific stored codes
+  // Also check all league-specific stored codes (nur wenn Gruppendaten lokal vorhanden)
   LEAGUES.forEach(function(l) {
     var lc = localStorage.getItem('kap_g2_grp_' + l.id);
     if (lc && groups.indexOf(lc) < 0) {
-      groups.push(lc);
-      if (profile) { profile.groups = groups; saveProfiles(profiles); }
+      if (loadGrpLocal(lc)) {
+        groups.push(lc);
+        if (profile) { profile.groups = groups; saveProfiles(profiles); }
+      } else {
+        localStorage.removeItem('kap_g2_grp_' + l.id); // verwaister Zeiger -> entfernen
+      }
     }
   });
   // Legacy key
   var localCode = localStorage.getItem('kap_g2_my_grp');
   if (localCode && groups.indexOf(localCode) < 0) {
-    groups.push(localCode);
-    if (profile) { profile.groups = groups; saveProfiles(profiles); }
+    if (loadGrpLocal(localCode)) {
+      groups.push(localCode);
+      if (profile) { profile.groups = groups; saveProfiles(profiles); }
+    } else {
+      try { localStorage.removeItem('kap_g2_my_grp'); } catch(_) {}
+    }
   }
 
   var pgroups = el('gsProfileGroups');
