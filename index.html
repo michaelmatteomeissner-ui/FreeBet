@@ -3939,7 +3939,7 @@ function initFirebaseAuth() {
       localStorage.setItem('kap_g2_my_name', G_ME);
       // Nur freigeben, wenn Alters-/AGB-/Datenschutz-Zustimmung vorliegt
       checkConsent(user.uid, function(ok){
-        if (ok) hideAuthGate();
+        if (ok) { hideAuthGate(); if (typeof syncUserGroups === 'function') syncUserGroups(function(){}); }
         else showAuthGate('consent');
       });
     } else {
@@ -4097,60 +4097,92 @@ function clearAllLocalForUser(uid, name) {
   if (window.G_SETTLE_TIMER) clearInterval(window.G_SETTLE_TIMER);
 }
 
+function doAccountDeletion(user) {
+  var uid    = user.uid;
+  var myName = G_ME;
+  showInfo('Konto wird gelöscht…');
+
+  // 1) Firebase-Daten aufräumen: eigene Gruppen löschen, aus fremden austragen
+  var cleanup = Promise.resolve();
+  if (G_FB_URL) {
+    cleanup = fbGetAuth('users/' + uid + '/groups').then(function(data) {
+      var codes = data ? Object.keys(data) : [];
+      return Promise.all(codes.map(function(code) {
+        return fbGetAuth('groups/' + code).then(function(g) {
+          if (!g) return null;
+          if (g.creatorUid === uid) {
+            return fbSetAuth('groups/' + code, null).catch(function(){});
+          }
+          var ops = [];
+          if (g.members && myName && g.members[myName]) ops.push(fbSetAuth('groups/' + code + '/members/' + myName, null).catch(function(){}));
+          if (g.memberUids && g.memberUids[uid])         ops.push(fbSetAuth('groups/' + code + '/memberUids/' + uid, null).catch(function(){}));
+          return Promise.all(ops);
+        }).catch(function(){});
+      }));
+    }).then(function() {
+      return fbSetAuth('users/' + uid, null).catch(function(){});
+    }).catch(function(){});
+  }
+
+  return cleanup.then(function() {
+    return user.delete(); // Auth-Konto löschen
+  }).then(function() {
+    clearAllLocalForUser(uid, myName);
+    FB_USER = null; G_ME = null;
+    showSuccess('Dein Konto wurde gelöscht.');
+    showAuthGate('login');
+  });
+}
+
 function deleteAccount() {
   var user = fbAuth.currentUser;
   if (!user) { showError('Du bist nicht angemeldet.'); return; }
   appConfirm({
     title:   'Konto endgültig löschen',
     message: 'Dein Konto und alle zugehörigen Daten werden unwiderruflich gelöscht. Von dir erstellte Gruppen werden ebenfalls gelöscht, aus anderen Gruppen wirst du entfernt.\n\nDies kann nicht rückgängig gemacht werden. Fortfahren?',
-    okLabel: 'Konto löschen', danger: true
+    okLabel: 'Weiter', danger: true
   }).then(function(ok) {
     if (!ok) return;
-    var uid    = user.uid;
-    var myName = G_ME;
-    showInfo('Konto wird gelöscht…');
-
-    // 1) Firebase-Daten aufräumen: eigene Gruppen löschen, aus fremden austragen
-    var cleanup = Promise.resolve();
-    if (G_FB_URL) {
-      cleanup = fbGetAuth('users/' + uid + '/groups').then(function(data) {
-        var codes = data ? Object.keys(data) : [];
-        return Promise.all(codes.map(function(code) {
-          return fbGetAuth('groups/' + code).then(function(g) {
-            if (!g) return null;
-            if (g.creatorUid === uid) {
-              return fbSetAuth('groups/' + code, null).catch(function(){});
-            }
-            var ops = [];
-            if (g.members && myName && g.members[myName]) ops.push(fbSetAuth('groups/' + code + '/members/' + myName, null).catch(function(){}));
-            if (g.memberUids && g.memberUids[uid])         ops.push(fbSetAuth('groups/' + code + '/memberUids/' + uid, null).catch(function(){}));
-            return Promise.all(ops);
-          }).catch(function(){});
-        }));
-      }).then(function() {
-        return fbSetAuth('users/' + uid, null).catch(function(){});
-      }).catch(function(){});
-    }
-
-    cleanup.then(function() {
-      // 2) Auth-Konto löschen
-      return user.delete();
-    }).then(function() {
-      // 3) Lokale Daten entfernen + zur Anmeldung
-      clearAllLocalForUser(uid, myName);
-      FB_USER = null; G_ME = null;
-      showSuccess('Dein Konto wurde gelöscht.');
-      showAuthGate('login');
-    }).catch(function(e) {
-      if (e && e.code === 'auth/requires-recent-login') {
-        // Firebase verlangt eine kürzliche Anmeldung -> ab- und wieder anmelden
-        showWarning('Aus Sicherheitsgründen bitte erneut anmelden und dann „Konto löschen" wiederholen.');
-        fbAuth.signOut().then(function() { showAuthGate('login'); }).catch(function(){});
-      } else {
-        showError('Löschen fehlgeschlagen: ' + (e && e.message ? e.message : 'Unbekannter Fehler'));
-      }
+    // Reauthentifizierung: Firebase verlangt für das Löschen eine kürzliche Anmeldung.
+    promptPassword().then(function(pw) {
+      if (pw == null) return;            // abgebrochen
+      if (!pw) { showError('Kein Passwort eingegeben.'); return; }
+      showInfo('Wird bestätigt…');
+      var cred = firebase.auth.EmailAuthProvider.credential(user.email, pw);
+      user.reauthenticateWithCredential(cred).then(function() {
+        return doAccountDeletion(user);
+      }).catch(function(e) {
+        if (e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')) {
+          showError('Falsches Passwort.');
+        } else {
+          showError('Konto konnte nicht gelöscht werden: ' + (e && e.message ? e.message : 'Unbekannter Fehler'));
+        }
+      });
     });
   });
+}
+
+// Passwort-Dialog für sensible Aktionen (z. B. Konto löschen)
+var _reauthResolve = null;
+function promptPassword() {
+  return new Promise(function(resolve) {
+    _reauthResolve = resolve;
+    var m = el('reauthModal'); if (!m) { resolve(null); return; }
+    var pw = el('reauthPw'); if (pw) pw.value = '';
+    m.style.display = 'flex';
+    if (pw) setTimeout(function(){ pw.focus(); }, 60);
+  });
+}
+function reauthConfirm() {
+  var pw = el('reauthPw') ? el('reauthPw').value : '';
+  var m = el('reauthModal'); if (m) m.style.display = 'none';
+  var r = _reauthResolve; _reauthResolve = null;
+  if (r) r(pw);
+}
+function reauthCancel() {
+  var m = el('reauthModal'); if (m) m.style.display = 'none';
+  var r = _reauthResolve; _reauthResolve = null;
+  if (r) r(null);
 }
 
 // initGroupTab uses Firebase Auth state
@@ -4561,8 +4593,15 @@ function renderGroupList() {
           okLabel: isCreator ? 'Löschen' : 'Entfernen', danger: true
         }).then(function(ok) {
           if (!ok) return;
-          if (isCreator && G_FB_URL) {
-            fbSetAuth('groups/' + grpCode, null).catch(function(){});
+          if (G_FB_URL) {
+            if (isCreator) {
+              fbSetAuth('groups/' + grpCode, null).catch(function(){});
+            } else {
+              // Nicht-Ersteller: eigene Mitgliedschaft serverseitig entfernen,
+              // damit das Verlassen geräteübergreifend bestehen bleibt.
+              if (G_ME) fbSetAuth('groups/' + grpCode + '/members/' + G_ME, null).catch(function(){});
+              if (FB_USER && FB_USER.uid) fbSetAuth('groups/' + grpCode + '/memberUids/' + FB_USER.uid, null).catch(function(){});
+            }
           }
           LEAGUES.forEach(function(l) {
             if (localStorage.getItem('kap_g2_grp_' + l.id) === grpCode) {
@@ -4632,8 +4671,15 @@ function renderGroupList() {
           okLabel: isCreator ? 'Löschen' : 'Austreten', danger: true
         }).then(function(ok) {
           if (!ok) return;
-          if (isCreator && G_FB_URL) {
-            fbSetAuth('groups/' + grpCode, null).catch(function(){});
+          if (G_FB_URL) {
+            if (isCreator) {
+              fbSetAuth('groups/' + grpCode, null).catch(function(){});
+            } else {
+              // Nicht-Ersteller: eigene Mitgliedschaft serverseitig entfernen,
+              // damit das Verlassen geräteübergreifend bestehen bleibt.
+              if (G_ME) fbSetAuth('groups/' + grpCode + '/members/' + G_ME, null).catch(function(){});
+              if (FB_USER && FB_USER.uid) fbSetAuth('groups/' + grpCode + '/memberUids/' + FB_USER.uid, null).catch(function(){});
+            }
           }
           LEAGUES.forEach(function(l) {
             if (localStorage.getItem('kap_g2_grp_' + l.id) === grpCode)
@@ -6779,6 +6825,17 @@ loadCurrentLeague().then(function() {
   <div class="lm-card">
     <div class="lm-head"><div class="lm-title" id="lmTitle">AGB</div><button class="lm-close" onclick="closeLegal()">×</button></div>
     <div class="lm-body" id="lmBody"></div>
+  </div>
+</div>
+<div id="reauthModal" style="position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:1.2rem">
+  <div style="width:100%;max-width:340px;background:var(--bg2,#15171d);border:1px solid var(--bo,#262a33);border-radius:14px;padding:1.4rem">
+    <div style="font-weight:700;font-size:.95rem;color:var(--tx,#e8eaed);margin-bottom:.5rem">Konto löschen bestätigen</div>
+    <div style="font-size:.74rem;color:var(--tx2,#c2c6cd);margin-bottom:.9rem;line-height:1.5">Bitte gib zur Sicherheit dein Passwort ein.</div>
+    <input id="reauthPw" type="password" class="ag-input" placeholder="Passwort" autocomplete="current-password">
+    <div style="display:flex;gap:.5rem;margin-top:.8rem">
+      <button onclick="reauthCancel()" style="flex:1;padding:.6rem;border-radius:8px;border:1px solid var(--bo,#262a33);background:none;color:var(--tx2,#c2c6cd);font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif">Abbrechen</button>
+      <button onclick="reauthConfirm()" style="flex:1;padding:.6rem;border-radius:8px;border:none;background:var(--loss,#ff5c5c);color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Konto löschen</button>
+    </div>
   </div>
 </div>
 </body>
