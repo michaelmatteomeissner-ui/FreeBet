@@ -3802,7 +3802,7 @@ var LEGAL_HTML = {
     <h2>4. Firebase (Google)</h2>
     <p>FreeBet nutzt folgende Firebase-Dienste von Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland:</p>
     <ul><li><strong>Firebase Authentication:</strong> Sicherer Login via E-Mail/Passwort</li><li><strong>Firebase Realtime Database:</strong> Speicherung von Gruppen und Spielständen</li></ul>
-    <p>Die Daten werden in der Region <strong>europe-west1 (Frankfurt)</strong> gespeichert. Google ist unter dem EU-US Data Privacy Framework zertifiziert. Weitere Informationen: <a href="https://firebase.google.com/support/privacy" target="_blank">firebase.google.com/support/privacy</a></p>
+    <p>Die Daten werden in der Region <strong>europe-west1 (St. Ghislain, Belgien)</strong> gespeichert. Google ist unter dem EU-US Data Privacy Framework zertifiziert. Weitere Informationen: <a href="https://firebase.google.com/support/privacy" target="_blank">firebase.google.com/support/privacy</a></p>
     <h2>5. Datenweitergabe</h2>
     <p>Deine Daten werden <strong>nicht</strong> an Dritte verkauft. Eine Weitergabe erfolgt ausschließlich an:</p>
     <ul><li>Google (Firebase) – als technischer Dienstleister (Auftragsverarbeitung)</li><li>Behörden – wenn gesetzlich vorgeschrieben</li></ul>
@@ -3817,14 +3817,17 @@ var LEGAL_HTML = {
     <h2>9. Jugendschutz</h2>
     <p>FreeBet richtet sich ausschließlich an volljährige Nutzer (ab 18 Jahren). Die App verarbeitet keine echten Geldbeträge. Für Personen unter 18 Jahren ist die Registrierung nicht gestattet.</p>`
 };
+// Basis-URL der Rechtstexte. Standard: leer = gleicher Ordner wie die App
+// (lade dazu agb.html, datenschutz.html, impressum.html in dasselbe Verzeichnis).
+// Liegt deine Website woanders, hier die volle URL eintragen,
+// z. B. 'https://michaelmatteomeissner-ui.github.io/'
+var LEGAL_BASE = '';
 function openLegal(which){
-  var titles = { agb:'AGB', ds:'Datenschutzerklärung', impressum:'Impressum' };
-  el('lmTitle').textContent = titles[which] || '';
-  el('lmBody').innerHTML = LEGAL_HTML[which] || '';
-  el('lmBody').scrollTop = 0;
-  el('legalModal').classList.add('open');
+  var map = { agb:'agb.html', ds:'datenschutz.html', impressum:'impressum.html' };
+  var file = map[which] || 'index.html';
+  window.open(LEGAL_BASE + file, '_blank', 'noopener');
 }
-function closeLegal(){ el('legalModal').classList.remove('open'); }
+function closeLegal(){ var lm=el('legalModal'); if(lm) lm.classList.remove('open'); }
 
 function agErr(msg){ var e=el('agErr'); if(!e)return; if(msg){ e.textContent=msg; e.classList.add('show'); } else { e.textContent=''; e.classList.remove('show'); } }
 function showAuthGate(panel){
@@ -3857,8 +3860,8 @@ function consentValidLocal(uid){
   try{ var x=JSON.parse(localStorage.getItem(consentKey(uid))||'null');
     return !!(x && x.version===CONSENT_VERSION && x.age18 && x.agb && x.datenschutz); }catch(_){ return false; }
 }
-function saveConsent(uid, dob){
-  var rec={ age18:true, agb:true, datenschutz:true, birthdate:dob||null, version:CONSENT_VERSION, acceptedAt:new Date().toISOString() };
+function saveConsent(uid){
+  var rec={ age18:true, agb:true, datenschutz:true, version:CONSENT_VERSION, acceptedAt:new Date().toISOString() };
   try{ localStorage.setItem(consentKey(uid), JSON.stringify(rec)); }catch(_){}
   if(G_FB_URL && uid) fbSetAuth('users/'+uid+'/consent', rec).catch(function(){});
   return rec;
@@ -3889,15 +3892,12 @@ function agForgot(){
 }
 function agRegister(){
   var name=(el('agRegName').value||'').trim(), email=(el('agRegEmail').value||'').trim();
-  var dob=el('agRegDob').value||'', pw=el('agRegPw').value||'', pw2=el('agRegPw2').value||'';
+  var pw=el('agRegPw').value||'', pw2=el('agRegPw2').value||'';
   if(name.length<2){ agErr('Bitte einen Anzeigenamen (min. 2 Zeichen) eingeben.'); return; }
   if(!email){ agErr('Bitte eine E-Mail-Adresse eingeben.'); return; }
-  var age=ageFromDob(dob);
-  if(age===null){ agErr('Bitte ein gültiges Geburtsdatum eingeben.'); return; }
-  if(age<18){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
   if(pw.length<6){ agErr('Passwort muss mindestens 6 Zeichen haben.'); return; }
   if(pw!==pw2){ agErr('Passwörter stimmen nicht überein.'); return; }
-  if(!el('agChkAge').checked){ agErr('Bitte bestätige, dass du mindestens 18 Jahre alt bist.'); return; }
+  if(!el('agChkAge').checked){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
   if(!el('agChkAgb').checked){ agErr('Bitte akzeptiere die AGB.'); return; }
   if(!el('agChkDs').checked){ agErr('Bitte akzeptiere die Datenschutzrichtlinie.'); return; }
   var b=el('agRegBtn'); b.disabled=true; b.textContent='Wird registriert…';
@@ -3906,7 +3906,7 @@ function agRegister(){
       FB_USER=cred.user; G_ME=name;
       saveSession({ name:name, uid:cred.user.uid, email:email });
       localStorage.setItem('kap_g2_my_name', name);
-      saveConsent(cred.user.uid, dob);
+      saveConsent(cred.user.uid);
       if(G_FB_URL) fbSetAuth('users/'+cred.user.uid+'/profile', { name:name, email:email, created:new Date().toISOString() }).catch(function(){});
       if(cred.user.sendEmailVerification) cred.user.sendEmailVerification().catch(function(){});
     });
@@ -3915,12 +3915,10 @@ function agRegister(){
    .then(function(){ b.disabled=false; b.textContent='Konto erstellen'; });
 }
 function agConfirmConsent(){
-  var dob=el('agCDob').value||''; var age=ageFromDob(dob);
-  if(age===null){ agErr('Bitte ein gültiges Geburtsdatum eingeben.'); return; }
-  if(age<18){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
-  if(!el('agCAge').checked || !el('agCAgb').checked || !el('agCDs').checked){ agErr('Bitte allen Punkten zustimmen.'); return; }
+  if(!el('agCAge').checked){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
+  if(!el('agCAgb').checked || !el('agCDs').checked){ agErr('Bitte allen Punkten zustimmen.'); return; }
   if(!FB_USER){ agErr('Sitzung abgelaufen, bitte neu anmelden.'); showAuthGate('login'); return; }
-  saveConsent(FB_USER.uid, dob);
+  saveConsent(FB_USER.uid);
   agErr(''); hideAuthGate();
 }
 function agLogout(){ fbAuth.signOut().then(function(){ showAuthGate('login'); }).catch(function(){}); }
@@ -6870,7 +6868,6 @@ loadCurrentLeague().then(function() {
     <div id="agRegister" style="display:none">
       <div class="ag-field"><label>Anzeigename</label><input class="ag-input" id="agRegName" type="text"></div>
       <div class="ag-field"><label>E-Mail</label><input class="ag-input" id="agRegEmail" type="email" autocomplete="email"></div>
-      <div class="ag-field"><label>Geburtsdatum</label><input class="ag-input" id="agRegDob" type="date"></div>
       <div class="ag-field"><label>Passwort (min. 6 Zeichen)</label><input class="ag-input" id="agRegPw" type="password" autocomplete="new-password"></div>
       <div class="ag-field"><label>Passwort wiederholen</label><input class="ag-input" id="agRegPw2" type="password" autocomplete="new-password"></div>
       <label class="ag-check"><input type="checkbox" id="agChkAge"><span>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</span></label>
@@ -6880,7 +6877,6 @@ loadCurrentLeague().then(function() {
     </div>
     <div id="agConsent" style="display:none">
       <div class="ag-sub" style="margin-bottom:.6rem">Bitte bestätige einmalig folgende Punkte, um fortzufahren:</div>
-      <div class="ag-field"><label>Geburtsdatum</label><input class="ag-input" id="agCDob" type="date"></div>
       <label class="ag-check"><input type="checkbox" id="agCAge"><span>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</span></label>
       <label class="ag-check"><input type="checkbox" id="agCAgb"><span>Ich akzeptiere die <a onclick="openLegal('agb')">AGB</a>.</span></label>
       <label class="ag-check"><input type="checkbox" id="agCDs"><span>Ich habe die <a onclick="openLegal('ds')">Datenschutzrichtlinie</a> gelesen und akzeptiere sie.</span></label>
