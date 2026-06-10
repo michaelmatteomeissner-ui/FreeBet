@@ -4398,6 +4398,7 @@ function reconcileLocalGroups(myCodes) {
 // Geräteübergreifender Abgleich (Firebase = Wahrheit).
 // PRIMÄR: alle Gruppen scannen und nach Mitgliedschaft (UID oder Anzeigename) filtern –
 // funktioniert auch, wenn users/<uid>/groups (noch) leer/nie befüllt wurde.
+var _syncRuleWarned = false;
 function syncUserGroups(cb) {
   if (!G_FB_URL || !FB_USER || !FB_USER.uid) { if (cb) cb(false); return; }
   var uid = FB_USER.uid;
@@ -4428,8 +4429,13 @@ function syncUserGroups(cb) {
       return;
     }
     syncViaMembershipList(uid, cb);
-  }).catch(function() {
-    // 'groups' nicht lesbar (z. B. Regeln) -> Fallback auf Mitgliedschaftsliste
+  }).catch(function(e) {
+    // 'groups' nicht lesbar -> Fallback. Bei Rechte-/Regelfehler einmalig hinweisen.
+    var msg = (e && e.message) || '';
+    if (!_syncRuleWarned && (msg.indexOf('401') >= 0 || msg.indexOf('403') >= 0 || msg.toLowerCase().indexOf('permission') >= 0)) {
+      _syncRuleWarned = true;
+      if (typeof showError === 'function') showError('Geräte-Sync blockiert: Bitte die aktuellen Firebase-Regeln aktivieren (der „groups"-Knoten muss für angemeldete Nutzer lesbar sein).');
+    }
     syncViaMembershipList(uid, cb);
   });
 }
