@@ -3741,6 +3741,7 @@ var FB_USER = null; // aktuell eingeloggter Firebase User
 
 // ── App-Sperre: Pflicht-Login + Alters-/AGB-/Datenschutz-Zustimmung ──────────
 var CONSENT_VERSION = 1; // bei Änderung der AGB/Datenschutz erhöhen -> erneute Zustimmung
+var REG_CONSENT_PENDING = false; // true direkt nach Registrierung (Zustimmung schon im Formular erteilt)
 // HINWEIS: Diese Texte durch deine echten AGB / Datenschutzrichtlinie ersetzen.
 var LEGAL_HTML = {
   impressum: `
@@ -3867,7 +3868,15 @@ function saveConsent(uid){
   return rec;
 }
 function checkConsent(uid, cb){
-  if(consentValidLocal(uid)){ cb(true); return; }
+  if(consentValidLocal(uid)){
+    // Sicherstellen, dass die Zustimmung auch in Firebase dokumentiert ist
+    // (z. B. falls sie dort fehlt, aber lokal gültig vorliegt).
+    if(G_FB_URL && uid){
+      try{ var rec=JSON.parse(localStorage.getItem(consentKey(uid))||'null');
+        if(rec) fbSetAuth('users/'+uid+'/consent', rec).catch(function(){}); }catch(_){}
+    }
+    cb(true); return;
+  }
   if(!G_FB_URL){ cb(false); return; }
   fbGetAuth('users/'+uid+'/consent').then(function(x){
     if(x && x.version===CONSENT_VERSION && x.age18 && x.agb && x.datenschutz){
@@ -3875,6 +3884,18 @@ function checkConsent(uid, cb){
       cb(true);
     } else cb(false);
   }).catch(function(){ cb(false); });
+}
+// Profil (E-Mail/Name) in Firebase dokumentieren/aktualisieren – bei jedem Login.
+// Einzelfelder, damit ein evtl. vorhandenes "created" nicht überschrieben wird.
+function upsertProfile(uid, name, email){
+  if(!G_FB_URL || !uid) return;
+  if(name)  fbSetAuth('users/'+uid+'/profile/name',  name ).catch(function(){});
+  if(email) fbSetAuth('users/'+uid+'/profile/email', email).catch(function(){});
+  fbSetAuth('users/'+uid+'/profile/lastLogin', new Date().toISOString()).catch(function(){});
+  // created nur setzen, wenn noch nicht vorhanden
+  fbGetAuth('users/'+uid+'/profile/created').then(function(c){
+    if(!c) fbSetAuth('users/'+uid+'/profile/created', new Date().toISOString()).catch(function(){});
+  }).catch(function(){});
 }
 function agLogin(){
   var email=(el('agLoginEmail').value||'').trim(), pw=el('agLoginPw').value||'';
@@ -3900,6 +3921,7 @@ function agRegister(){
   if(!el('agChkAge').checked){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
   if(!el('agChkAgb').checked){ agErr('Bitte akzeptiere die AGB.'); return; }
   if(!el('agChkDs').checked){ agErr('Bitte akzeptiere die Datenschutzrichtlinie.'); return; }
+  REG_CONSENT_PENDING = true; // Zustimmungen wurden hier bereits erteilt -> keine erneute Abfrage
   var b=el('agRegBtn'); b.disabled=true; b.textContent='Wird registriert…';
   fbAuth.createUserWithEmailAndPassword(email,pw).then(function(cred){
     return cred.user.updateProfile({ displayName:name }).then(function(){
@@ -3919,6 +3941,7 @@ function agConfirmConsent(){
   if(!el('agCAgb').checked || !el('agCDs').checked){ agErr('Bitte allen Punkten zustimmen.'); return; }
   if(!FB_USER){ agErr('Sitzung abgelaufen, bitte neu anmelden.'); showAuthGate('login'); return; }
   saveConsent(FB_USER.uid);
+  upsertProfile(FB_USER.uid, G_ME, FB_USER.email);
   agErr(''); hideAuthGate();
 }
 function agLogout(){ fbAuth.signOut().then(function(){ showAuthGate('login'); }).catch(function(){}); }
@@ -3940,11 +3963,20 @@ function initFirebaseAuth() {
       G_ME = user.displayName || user.email.split('@')[0];
       saveSession({ name: G_ME, uid: user.uid, email: user.email });
       localStorage.setItem('kap_g2_my_name', G_ME);
-      // Nur freigeben, wenn Alters-/AGB-/Datenschutz-Zustimmung vorliegt
-      checkConsent(user.uid, function(ok){
-        if (ok) { hideAuthGate(); if (typeof syncUserGroups === 'function') syncUserGroups(function(){}); }
-        else showAuthGate('consent');
-      });
+      if (REG_CONSENT_PENDING) {
+        // Gerade registriert: Zustimmungen wurden im Formular bereits erteilt
+        REG_CONSENT_PENDING = false;
+        saveConsent(user.uid);
+        upsertProfile(user.uid, G_ME, user.email);
+        hideAuthGate();
+        if (typeof syncUserGroups === 'function') syncUserGroups(function(){});
+      } else {
+        // Nur freigeben, wenn Alters-/AGB-/Datenschutz-Zustimmung vorliegt
+        checkConsent(user.uid, function(ok){
+          if (ok) { upsertProfile(user.uid, G_ME, user.email); hideAuthGate(); if (typeof syncUserGroups === 'function') syncUserGroups(function(){}); }
+          else showAuthGate('consent');
+        });
+      }
     } else {
       FB_USER = null; G_ME = null;
       showAuthGate('login');
@@ -4880,11 +4912,11 @@ function fbUrl(path) {
 // Aktuelles Firebase ID-Token holen (für authentifizierte REST-Zugriffe).
 // Ohne dieses Token lehnt Firebase Schreib-/Lesezugriffe mit 401 ab, sobald
 // die Datenbank-Regeln eine Anmeldung verlangen (z. B. ".write": "auth != null").
-function fbGetToken() {
+function fbGetToken(force) {
   try {
     var u = (typeof fbAuth !== 'undefined' && fbAuth) ? fbAuth.currentUser : null;
     if (u && u.getIdToken) {
-      return u.getIdToken().catch(function() { return ''; });
+      return u.getIdToken(!!force).catch(function() { return ''; });
     }
   } catch(_) {}
   return Promise.resolve('');
@@ -4909,26 +4941,39 @@ function fbCheckData(data) {
 }
 
 function fbGetAuth(path) {
-  // Firebase REST API unterstützt CORS vollständig – auch von file://
-  return fbGetToken().then(function(token) {
-    return fetch(fbUrlAuth(path, token), { method: 'GET', mode: 'cors', headers: { 'Cache-Control': 'no-cache' } });
-  }).then(function(r) {
-    if (!r.ok) throw new Error('Firebase HTTP ' + r.status + ' – Bitte Regeln prüfen');
-    return r.json();
-  }).then(fbCheckData);
+  function attempt(force) {
+    return fbGetToken(force).then(function(token) {
+      return fetch(fbUrlAuth(path, token), { method: 'GET', mode: 'cors', headers: { 'Cache-Control': 'no-cache' } });
+    }).then(function(r) {
+      if ((r.status === 401 || r.status === 403) && !force) return attempt(true);
+      if (!r.ok) throw new Error('Firebase HTTP ' + r.status + ' – Bitte Regeln prüfen');
+      return r.json();
+    }).then(fbCheckData);
+  }
+  return attempt(false);
 }
 
 function fbSetAuth(path, data) {
-  return fbGetToken().then(function(token) {
-    return fetch(fbUrlAuth(path, token), {
-      method: 'PUT', mode: 'cors',
-      headers: fbHeaders(),
-      body: JSON.stringify(data)
-    });
-  }).then(function(r) {
-    if (!r.ok) throw new Error('Firebase HTTP ' + r.status);
-    return r.json();
-  }).then(fbCheckData);
+  function attempt(force) {
+    return fbGetToken(force).then(function(token) {
+      return fetch(fbUrlAuth(path, token), {
+        method: 'PUT', mode: 'cors',
+        headers: fbHeaders(),
+        body: JSON.stringify(data)
+      });
+    }).then(function(r) {
+      // Token evtl. abgelaufen/ungültig -> einmal mit frischem Token wiederholen
+      if ((r.status === 401 || r.status === 403) && !force) return attempt(true);
+      if (!r.ok) {
+        return r.text().then(function(b) {
+          var reason = b; try { reason = (JSON.parse(b).error) || b; } catch(_) {}
+          throw new Error('HTTP ' + r.status + (reason ? ' – ' + reason : ''));
+        });
+      }
+      return r.json();
+    }).then(fbCheckData);
+  }
+  return attempt(false);
 }
 
 function fbPatchAuth(path, data) {
@@ -5245,14 +5290,7 @@ function joinGroup() {
   var fetchUrl = G_FB_URL.replace(/\/$/, '') + '/groups/' + code + '.json';
   setFbStatus('Suche Gruppe ' + code + '...', 'var(--draw)');
 
-  fbGetToken().then(function(token) {
-    return fetch(fbUrlAuth('groups/' + code, token), { method: 'GET', mode: 'cors', headers: { 'Cache-Control': 'no-cache' } });
-  })
-    .then(function(r) {
-      setFbStatus('Firebase antwortet: HTTP ' + r.status, r.ok ? 'var(--win)' : 'var(--loss)');
-      if (!r.ok) throw new Error('HTTP ' + r.status + ' – Regeln prüfen');
-      return r.json();
-    })
+  fbGetAuth('groups/' + code)
     .then(function(data) {
       if (data && data.error) {
         throw new Error('Firebase: ' + data.error);
