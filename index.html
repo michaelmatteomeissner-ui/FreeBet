@@ -5295,18 +5295,36 @@ function joinGroup() {
       if (data && data.error) {
         throw new Error('Firebase: ' + data.error);
       }
-      if (!data) data = loadGrpLocal(code); // nur lokal vorhandene Gruppe zulassen
-      setFbStatus('Daten erhalten: ' + (data ? 'Gruppe gefunden' : 'null (nicht gefunden)'), data ? 'var(--win)' : 'var(--loss)');
-      doJoin(data);
+      if (data && (data.members || data.code)) {
+        setFbStatus('Gruppe gefunden', 'var(--win)');
+        doJoin(data);
+        return;
+      }
+      // Direkt nicht gefunden -> gesamten groups-Knoten nach dem Code durchsuchen
+      // (tolerant gegenüber Groß-/Kleinschreibung und führenden/abschließenden Zeichen).
+      return fbGetAuth('groups').then(function(all) {
+        var found = null;
+        if (all && typeof all === 'object') {
+          var want = code.toUpperCase();
+          Object.keys(all).forEach(function(k) {
+            var g = all[k];
+            if (!g) return;
+            if (k.toUpperCase() === want || String(g.code || '').toUpperCase() === want) found = g;
+          });
+        }
+        if (!found) found = loadGrpLocal(code);
+        setFbStatus(found ? 'Gruppe gefunden' : 'Gruppe ' + code + ' nicht gefunden', found ? 'var(--win)' : 'var(--loss)');
+        doJoin(found);
+      });
     })
     .catch(function(e) {
       resetBtn();
       setFbStatus('Fehler: ' + e.message, 'var(--loss)');
-      if (e.message.indexOf('Permission') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('403') >= 0) {
+      if (e.message.indexOf('Permission') >= 0 || e.message.indexOf('permission') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('403') >= 0) {
         showFbRulesHint();
-        showError('Firebase Fehler: ' + e.message + ' - Loesung: Firebase Console > Realtime Database > Regeln > .read und .write auf true setzen > Veroeffentlichen');
+        showError('Beitritt von den Firebase-Regeln blockiert (' + e.message + '). Bitte die aktuellen Regeln veröffentlichen: groups → ".read"/".write": "auth != null".');
       } else {
-        showError('Verbindungsfehler: ' + e.message + ' - Fetch-URL: ' + fetchUrl);
+        showError('Verbindungsfehler: ' + e.message + ' – Fetch-URL: ' + fetchUrl);
       }
     });
 }
