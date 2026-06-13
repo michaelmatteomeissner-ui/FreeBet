@@ -4112,9 +4112,11 @@ function agRegister(){
           });
         }
         FB_USER=cred.user; G_ME=name;
-        saveSession({ name:name, uid:cred.user.uid, email:email });
-        localStorage.setItem('kap_g2_my_name', name);
-        saveConsent(cred.user.uid);
+        try {
+          saveSession({ name:name, uid:cred.user.uid, email:email });
+          lsSet('kap_g2_my_name', name);
+          saveConsent(cred.user.uid);
+        } catch(_) {}
         if(G_FB_URL) fbSetAuth('users/'+cred.user.uid+'/profile', { name:name, email:email, created:new Date().toISOString() }).catch(function(){});
         if(cred.user.sendEmailVerification) cred.user.sendEmailVerification().catch(function(){});
       });
@@ -4200,7 +4202,7 @@ function initFirebaseAuth() {
       try { localStorage.setItem('kap_uid', user.uid); } catch(_) {}
       G_ME = user.displayName || user.email.split('@')[0];
       saveSession({ name: G_ME, uid: user.uid, email: user.email });
-      localStorage.setItem('kap_g2_my_name', G_ME);
+      lsSet('kap_g2_my_name', G_ME);
       // E-Mail-Bestätigung erzwingen (Admins ausgenommen)
       if (REQUIRE_EMAIL_VERIFICATION && !user.emailVerified && !isAdminAccount(user)) {
         if (REG_CONSENT_PENDING) { REG_CONSENT_PENDING = false; saveConsent(user.uid); upsertProfile(user.uid, G_ME, user.email); }
@@ -4232,7 +4234,7 @@ function initFirebaseAuth() {
 // Fehlertext aus Firebase Error Code
 function fbAuthError(code) {
   var msgs = {
-    'auth/email-already-in-use':    'Diese E-Mail-Adresse wird bereits verwendet.',
+    'auth/email-already-in-use':    'Diese E-Mail wird bereits verwendet. Falls eine frühere Registrierung abgebrochen wurde, melde dich einfach an – oder nutze eine andere E-Mail.',
     'auth/invalid-email':           'Ungültige E-Mail-Adresse.',
     'auth/weak-password':           'Passwort muss mindestens 6 Zeichen haben.',
     'auth/user-not-found':          'Kein Konto mit dieser E-Mail gefunden. Falls du neu bist, bitte zuerst registrieren.',
@@ -4269,7 +4271,7 @@ function doRegister() {
         FB_USER = cred.user;
         G_ME = name;
         saveSession({ name: name, uid: cred.user.uid, email: email });
-        localStorage.setItem('kap_g2_my_name', name);
+        lsSet('kap_g2_my_name', name);
 
         // Profil in Firebase DB speichern (für Gruppenanzeige)
         return fbDb.ref('users/' + cred.user.uid).set({
@@ -4308,7 +4310,7 @@ function doLogin() {
       FB_USER = cred.user;
       G_ME = cred.user.displayName || cred.user.email.split('@')[0];
       saveSession({ name: G_ME, uid: cred.user.uid, email: cred.user.email });
-      localStorage.setItem('kap_g2_my_name', G_ME);
+      lsSet('kap_g2_my_name', G_ME);
       clearLoginError();
       resetBtn();
       showGroupsScreen();
@@ -4498,7 +4500,7 @@ function initGroupTab() {
     G_ME = session.name;
   }
 
-  localStorage.setItem('kap_g2_my_name', G_ME);
+  lsSet('kap_g2_my_name', G_ME);
 
   // Fehlerhafte Liga-Zuordnungen einmalig reparieren (Altlasten beheben)
   reconcileGroupPointers();
@@ -4780,6 +4782,7 @@ function syncViaMembershipList(uid, cb) {
   }).catch(function() { if (cb) cb(false); });
 }
 function getSession()    { try { return JSON.parse(localStorage.getItem('fb_session')  || 'null'); } catch(_) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch(_) { return false; } }
 function saveSession(s)  { try { localStorage.setItem('fb_session',  JSON.stringify(s)); } catch(_) {} }
 
 // session = { name, pin (hashed) }
@@ -5592,7 +5595,7 @@ function joinGroup() {
     } else {
       setGroupPointer(code, jLgId);
     }
-    localStorage.setItem('kap_g2_my_name', name);
+    lsSet('kap_g2_my_name', name);
 
     // Register group in profile (Profil notfalls anlegen)
     var profiles = getProfiles();
