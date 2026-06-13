@@ -1105,6 +1105,16 @@ nav button.active{background:var(--bg4);color:var(--ac)}
             <button onclick="showJoinGroup()" style="flex:1;background:rgba(71,200,255,.1);border:1px solid rgba(71,200,255,.25);color:var(--blue);border-radius:7px;padding:.58rem;font-size:.76rem;cursor:pointer;font-family:'DM Sans',sans-serif">Code eingeben</button>
           </div>
 
+          <button onclick="toggleGlobalRank()" style="width:100%;margin-top:.55rem;background:rgba(232,255,71,.08);border:1px solid rgba(232,255,71,.25);color:var(--ac);border-radius:7px;padding:.58rem;font-size:.76rem;cursor:pointer;font-family:'DM Sans',sans-serif">🌍 Globales Ranking</button>
+          <div id="gsGlobalRank" style="display:none;margin-top:.85rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+              <div style="font-size:.8rem;font-weight:700;color:var(--ac)">🌍 Globales Ranking</div>
+              <button onclick="loadGlobalRanking()" style="background:none;border:1px solid var(--bo);color:var(--tx2);border-radius:6px;padding:.3rem .55rem;font-size:.68rem;cursor:pointer">Aktualisieren</button>
+            </div>
+            <div style="font-size:.66rem;color:var(--tx3);margin-bottom:.7rem">Über alle Gruppen-Ligen hinweg.</div>
+            <div id="globalRankContent"><div style="color:var(--tx3);font-size:.74rem;text-align:center;padding:.6rem 0">Lädt…</div></div>
+          </div>
+
           <div id="gsCreateForm" style="display:none;margin-top:.85rem;background:var(--bg2);border:1px solid var(--bo);border-radius:9px;padding:1rem">
             <div style="font-size:.74rem;font-weight:600;color:var(--ac);margin-bottom:.6rem">Neue Gruppe erstellen</div>
             <div class="login-field"><label>Gruppenname</label><input class="cin" id="gNewName" placeholder="z.B. WM-Tipp-Runde" style="width:100%"></div>
@@ -4823,6 +4833,78 @@ function showGroupsScreen() {
 // Hinweis: Der frühere In-App-Code-Generator wurde entfernt. Einmal-Codes
 // werden direkt in Firebase unter "invites" gepflegt (Wert false = frei,
 // eine UID = benutzt). Das Einlösen beim Registrieren erfolgt automatisch.
+
+// ── Globales Ranking (über alle Gruppen-Ligen) ───────────────────────
+function toggleGlobalRank(){
+  var box = el('gsGlobalRank'); if(!box) return;
+  var open = box.style.display === 'none';
+  box.style.display = open ? 'block' : 'none';
+  if(open) loadGlobalRanking();
+}
+function loadGlobalRanking(){
+  var cont = el('globalRankContent'); if(!cont) return;
+  if(!G_FB_URL){ cont.innerHTML=''; cont.appendChild(mkInfo('Globales Ranking ist nur online verfügbar.')); return; }
+  cont.innerHTML = '<div style="color:var(--tx3);font-size:.74rem;text-align:center;padding:.6rem 0">Lädt…</div>';
+  fbGetAuth('groups').then(function(all){
+    renderGlobalRanking(computeGlobalRanking(all || {}));
+  }).catch(function(e){
+    var m=(e&&e.message)||'';
+    cont.innerHTML='';
+    cont.appendChild(mkInfo((m.indexOf('401')>=0||m.indexOf('403')>=0) ? 'Kein Zugriff auf die Gruppendaten (Firebase-Regeln prüfen).' : 'Konnte Ranking nicht laden.'));
+  });
+}
+function mkInfo(t){ var d=document.createElement('div'); d.style.cssText='color:var(--tx3);font-size:.73rem;text-align:center;padding:.5rem 0'; d.textContent=t; return d; }
+function computeGlobalRanking(all){
+  var singleWins = [], byName = {};
+  Object.keys(all||{}).forEach(function(code){
+    var g = all[code]; if(!g || typeof g!=='object') return;
+    var startBal = (g.settings && typeof g.settings.startBalance==='number') ? g.settings.startBalance : 1000;
+    var gname = g.name || code;
+    if(g.members){
+      Object.keys(g.members).forEach(function(name){
+        var m = g.members[name]; if(!m) return;
+        var bal = (typeof m.balance==='number') ? m.balance : startBal;
+        if(!byName[name]) byName[name] = { name:name, profit:0, groups:0 };
+        byName[name].profit += (bal - startBal);
+        byName[name].groups += 1;
+      });
+    }
+    (g.slips||[]).forEach(function(s){
+      if(s && s.result==='win'){
+        var payout = s.potPayout||0, stake = s.stake||0;
+        singleWins.push({ member:s.member||'?', profit: payout-stake, odds:s.totalOdds, group:gname });
+      }
+    });
+  });
+  singleWins.sort(function(a,b){ return b.profit - a.profit; });
+  var cumulative = Object.keys(byName).map(function(k){ return byName[k]; }).sort(function(a,b){ return b.profit - a.profit; });
+  return { singleWins: singleWins.slice(0,10), cumulative: cumulative.slice(0,15) };
+}
+function renderGlobalRanking(data){
+  var cont = el('globalRankContent'); if(!cont) return;
+  cont.innerHTML = '';
+  function sect(title){ var h=document.createElement('div'); h.style.cssText='font-size:.7rem;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin:.6rem 0 .4rem'; h.textContent=title; return h; }
+  function row(rank, name, subText, right, rightColor){
+    var r=document.createElement('div'); r.style.cssText='display:flex;align-items:center;gap:.5rem;padding:.34rem 0;border-bottom:1px solid var(--bo)';
+    var n=document.createElement('div'); n.style.cssText='width:1.4rem;text-align:center;font-family:Bebas Neue,sans-serif;font-size:.95rem;color:'+(rank<=3?'var(--ac)':'var(--tx3)'); n.textContent=rank;
+    var l=document.createElement('div'); l.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    var nm=document.createElement('span'); nm.style.cssText='font-size:.76rem;color:var(--tx)'; nm.textContent=name; l.appendChild(nm);
+    if(subText){ var sp=document.createElement('span'); sp.style.cssText='color:var(--tx3);font-size:.63rem'; sp.textContent=' · '+subText; l.appendChild(sp); }
+    var rt=document.createElement('div'); rt.style.cssText='font-size:.78rem;font-weight:700;flex-shrink:0;color:'+(rightColor||'var(--tx)'); rt.textContent=right;
+    r.appendChild(n); r.appendChild(l); r.appendChild(rt); return r;
+  }
+  cont.appendChild(sect('💰 Größte Einzelgewinne'));
+  if(!data.singleWins.length) cont.appendChild(mkInfo('Noch keine gewonnenen Scheine.'));
+  else data.singleWins.forEach(function(w,i){
+    cont.appendChild(row(i+1, w.member, w.group + (w.odds?(' · Quote '+w.odds):''), '+'+gFmt(w.profit), 'var(--win)'));
+  });
+  cont.appendChild(sect('🏆 Höchster Gesamtgewinn'));
+  if(!data.cumulative.length) cont.appendChild(mkInfo('Noch keine Daten.'));
+  else data.cumulative.forEach(function(c,i){
+    var col = c.profit>0?'var(--win)':(c.profit<0?'var(--loss)':'var(--tx2)');
+    cont.appendChild(row(i+1, c.name, c.groups+(c.groups===1?' Gruppe':' Gruppen'), (c.profit>0?'+':'')+gFmt(c.profit), col));
+  });
+}
 
 function renderGroupList() {
   var list = el('gsGroupList');
