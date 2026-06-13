@@ -4049,21 +4049,33 @@ function consumeInvite(code, uid){
     var c=(code||'').trim().toUpperCase();
     if(!c){ resolve({ok:false,reason:'invalid'}); return; }
     if(typeof fbDb==='undefined' || !fbDb){ resolve({ok:false,reason:'error'}); return; }
-    try {
-      fbDb.ref('invites/'+c).transaction(function(cur){
-        if(cur===null || cur===undefined) return;     // Code existiert nicht -> Abbruch
-        if(cur===false) return uid;                     // unbenutzt -> einlösen
-        return;                                          // bereits benutzt -> Abbruch
-      }, function(err, committed, snap){
-        if(err){ resolve({ok:false,reason:'error'}); return; }
-        if(committed){ resolve({ok:true}); return; }
-        var val = snap ? snap.val() : null;
-        resolve({ok:false, reason: val ? 'used' : 'invalid'});
-      });
-    } catch(_) { resolve({ok:false,reason:'error'}); }
+    // 1) Code zuerst per REST lesen (mit Auth-Token) -> klare Unterscheidung:
+    //    Rechte-Fehler (Regeln) vs. Code unbekannt vs. bereits benutzt.
+    fbGetAuth('invites/'+c).then(function(val){
+      if(val===null || val===undefined){ resolve({ok:false,reason:'invalid'}); return; }   // Code existiert nicht
+      if(val!==false){ resolve({ok:false,reason:'used'}); return; }                          // bereits eingelöst (uid)
+      // 2) Frei -> atomar einlösen (verhindert Doppelnutzung).
+      try {
+        fbDb.ref('invites/'+c).transaction(function(cur){
+          if(cur===null || cur===undefined) return;   // zwischenzeitlich entfernt
+          if(cur===false) return uid;                  // unbenutzt -> einlösen
+          return;                                       // inzwischen benutzt -> Abbruch
+        }, function(err, committed, snap){
+          if(err){ resolve({ok:false,reason:'rules'}); return; }
+          if(committed){ resolve({ok:true}); return; }
+          var v = snap ? snap.val() : null;
+          resolve({ok:false, reason: v ? 'used' : 'invalid'});
+        });
+      } catch(_) { resolve({ok:false,reason:'error'}); }
+    }).catch(function(e){
+      var m=(e&&e.message)||'';
+      if(m.indexOf('401')>=0 || m.indexOf('403')>=0 || m.toLowerCase().indexOf('permission')>=0) resolve({ok:false,reason:'rules'});
+      else resolve({ok:false,reason:'error'});
+    });
   });
 }
 
+var REG_IN_PROGRESS = false; // true während der Registrierung -> onAuthStateChanged greift nicht ins Gate ein
 function agRegister(){
   var name=(el('agRegName').value||'').trim(), email=(el('agRegEmail').value||'').trim();
   var pw=el('agRegPw').value||'', pw2=el('agRegPw2').value||'';
@@ -4076,17 +4088,14 @@ function agRegister(){
   if(!el('agChkAge').checked){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
   if(!el('agChkAgb').checked){ agErr('Bitte akzeptiere die AGB.'); return; }
   if(!el('agChkDs').checked){ agErr('Bitte akzeptiere die Datenschutzrichtlinie.'); return; }
-  REG_CONSENT_PENDING = true; // Zustimmungen wurden hier bereits erteilt -> keine erneute Abfrage
+  REG_CONSENT_PENDING = true;
+  REG_IN_PROGRESS = true;
   var b=el('agRegBtn'); b.disabled=true; b.textContent='Wird registriert…';
   fbAuth.createUserWithEmailAndPassword(email,pw).then(function(cred){
     return cred.user.updateProfile({ displayName:name }).then(function(){
-      // Einladungscode einlösen (nach Konto-Erstellung, da authentifiziert nötig)
-      var inviteStep = REQUIRE_INVITE_CODE
-        ? consumeInvite(invite, cred.user.uid)
-        : Promise.resolve({ok:true});
+      var inviteStep = REQUIRE_INVITE_CODE ? consumeInvite(invite, cred.user.uid) : Promise.resolve({ok:true});
       return inviteStep.then(function(res){
         if(!res.ok){
-          // Code ungültig/benutzt -> gerade erstelltes Konto wieder entfernen
           REG_CONSENT_PENDING = false;
           return cred.user.delete().catch(function(){}).then(function(){
             throw new Error('INVITE_' + (res.reason||'invalid'));
@@ -4102,17 +4111,27 @@ function agRegister(){
     });
   }).then(function(){
     agErr('');
-    // E-Mail-Bestätigung wird vom onAuthStateChanged-Gate übernommen
-    if(!(REQUIRE_EMAIL_VERIFICATION && !isAdminUser())) hideAuthGate();
-  })
-   .catch(function(e){
-     var m=(e&&e.message)||'';
-     if(m.indexOf('INVITE_used')>=0){ agErr('Dieser Einladungscode wurde bereits verwendet.'); }
-     else if(m.indexOf('INVITE_invalid')>=0){ agErr('Ungültiger Einladungscode.'); }
-     else if(m.indexOf('INVITE_error')>=0){ agErr('Einladungscode konnte nicht geprüft werden (Verbindung/Regeln). Bitte erneut versuchen.'); }
-     else { agErr(fbAuthError(e.code)); }
-   })
-   .then(function(){ b.disabled=false; b.textContent='Konto erstellen'; });
+    REG_CONSENT_PENDING = false;
+    // Erfolg: Gate je nach E-Mail-Bestätigung selbst setzen (kein Umweg über onAuthStateChanged)
+    if (REQUIRE_EMAIL_VERIFICATION && !isAdminUser()) {
+      if (el('agVerifyEmail')) el('agVerifyEmail').textContent = (FB_USER && FB_USER.email) || email;
+      showAuthGate('verify');
+    } else {
+      hideAuthGate();
+      if (typeof syncUserGroups === 'function') syncUserGroups(function(){});
+    }
+  }).catch(function(e){
+    var m=(e&&e.message)||'';
+    showAuthGate('register'); // zurück zum vollständigen Registrierungsformular (Eingaben bleiben erhalten)
+    if(m.indexOf('INVITE_used')>=0){ agErr('Dieser Einladungscode wurde bereits verwendet.'); }
+    else if(m.indexOf('INVITE_invalid')>=0){ agErr('Dieser Einladungscode ist ungültig (nicht gefunden).'); }
+    else if(m.indexOf('INVITE_rules')>=0){ agErr('Code konnte nicht geprüft werden – in Firebase fehlt die Freigabe für „invites". Bitte die invites-Regeln veröffentlichen.'); }
+    else if(m.indexOf('INVITE_error')>=0){ agErr('Code konnte nicht geprüft werden (Verbindung). Bitte erneut versuchen.'); }
+    else { agErr(fbAuthError(e.code)); }
+  }).then(function(){
+    b.disabled=false; b.textContent='Konto erstellen';
+    REG_IN_PROGRESS = false;
+  });
 }
 function agConfirmConsent(){
   if(!el('agCAge').checked){ agErr('Du musst mindestens 18 Jahre alt sein, um die App zu nutzen.'); return; }
@@ -4160,6 +4179,9 @@ function initFirebaseAuth() {
   fbAuth.onAuthStateChanged(function(user) {
     AUTH_RESOLVED = true;
     FB_USER = user;
+    // Während einer laufenden Registrierung steuert agRegister das Gate selbst
+    // (Konto wird ggf. angelegt und bei ungültigem Code wieder gelöscht) -> hier nichts tun.
+    if (REG_IN_PROGRESS) return;
     if (user) {
       // Konto-Wechsel auf demselben Gerät erkennen -> alte lokale Gruppendaten verwerfen
       var lastUid = null;
