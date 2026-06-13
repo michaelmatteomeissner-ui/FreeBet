@@ -4058,25 +4058,21 @@ function consumeInvite(code, uid){
   return new Promise(function(resolve){
     var c=(code||'').trim().toUpperCase();
     if(!c){ resolve({ok:false,reason:'invalid'}); return; }
-    if(typeof fbDb==='undefined' || !fbDb){ resolve({ok:false,reason:'error'}); return; }
-    // 1) Code zuerst per REST lesen (mit Auth-Token) -> klare Unterscheidung:
-    //    Rechte-Fehler (Regeln) vs. Code unbekannt vs. bereits benutzt.
+    // 1) Code per REST lesen (mit Auth-Token): unterscheidet Rechte-Fehler / unbekannt / benutzt.
     fbGetAuth('invites/'+c).then(function(val){
       if(val===null || val===undefined){ resolve({ok:false,reason:'invalid'}); return; }   // Code existiert nicht
       if(val!==false){ resolve({ok:false,reason:'used'}); return; }                          // bereits eingelöst (uid)
-      // 2) Frei -> atomar einlösen (verhindert Doppelnutzung).
-      try {
-        fbDb.ref('invites/'+c).transaction(function(cur){
-          if(cur===null || cur===undefined) return;   // zwischenzeitlich entfernt
-          if(cur===false) return uid;                  // unbenutzt -> einlösen
-          return;                                       // inzwischen benutzt -> Abbruch
-        }, function(err, committed, snap){
-          if(err){ resolve({ok:false,reason:'rules'}); return; }
-          if(committed){ resolve({ok:true}); return; }
-          var v = snap ? snap.val() : null;
-          resolve({ok:false, reason: v ? 'used' : 'invalid'});
-        });
-      } catch(_) { resolve({ok:false,reason:'error'}); }
+      // 2) Frei -> per PUT einlösen. KEINE RTDB-Transaktion (die ruft die Update-Funktion
+      //    zuerst mit null auf und würde fälschlich abbrechen). Die Regel
+      //    ".write": "data.val() === false && newData.val() === auth.uid" erzwingt die
+      //    Einmaligkeit serverseitig: ein zweiter, gleichzeitiger Versuch wird mit 403 abgelehnt.
+      fbSetAuth('invites/'+c, uid).then(function(){
+        resolve({ok:true});
+      }).catch(function(e){
+        var m=(e&&e.message)||'';
+        // 401/403 = Code wurde zwischenzeitlich vergeben ODER Schreibregel greift nicht
+        resolve({ok:false, reason:(m.indexOf('401')>=0||m.indexOf('403')>=0)?'used':'error'});
+      });
     }).catch(function(e){
       var m=(e&&e.message)||'';
       if(m.indexOf('401')>=0 || m.indexOf('403')>=0 || m.toLowerCase().indexOf('permission')>=0) resolve({ok:false,reason:'rules'});
