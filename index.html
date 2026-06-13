@@ -1097,16 +1097,6 @@ nav button.active{background:var(--bg4);color:var(--ac)}
             </div>
           </div>
 
-          <div id="adminInvitePanel" style="display:none;border:1px solid var(--bo);border-radius:10px;padding:.7rem;margin-bottom:.8rem;background:rgba(255,255,255,.02)">
-            <div style="font-size:.7rem;font-weight:700;color:var(--ac,#e8ff47);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Einladungscodes (Admin)</div>
-            <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem">
-              <input id="invCount" type="number" min="1" max="100" value="10" style="width:64px;background:var(--bg2);border:1px solid var(--bo);color:var(--tx);border-radius:6px;padding:.35rem;font-size:.75rem">
-              <button onclick="generateInvites()" class="slip-submit" style="margin-top:0;font-size:.72rem;flex:1">Codes erzeugen</button>
-              <button onclick="loadInvites()" style="background:none;border:1px solid var(--bo);color:var(--tx2);border-radius:6px;padding:.35rem .6rem;font-size:.72rem;cursor:pointer">Aktualisieren</button>
-            </div>
-            <div id="invList" style="max-height:200px;overflow:auto;font-family:'DM Mono',monospace;font-size:.72rem"></div>
-          </div>
-
           <div style="font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem">Meine Gruppen</div>
           <div class="group-list" id="gsGroupList"></div>
 
@@ -3153,32 +3143,29 @@ function trkSetFilter(f){
   if(box){ var bs=box.querySelectorAll('.sf-btn'); for(var i=0;i<bs.length;i++){ bs[i].classList.toggle('active', bs[i].getAttribute('data-f')===f); } }
   renderSubmittedSlips();
 }
-// Bewertet offene Wetten pro beendetem Spiel anhand der geladenen Ergebnisse.
-function trackerAutoGrade(){
-  if (typeof gBuildResMap !== 'function' || typeof getSlips !== 'function') return 0;
-  var resMap = gBuildResMap();
-  if (!resMap || !Object.keys(resMap).length) return 0;
-  var slips = getSlips(), changed = 0;
-  slips.forEach(function(slip){
-    (slip.bets||[]).forEach(function(bet){
-      if (bet.outcome && bet.outcome !== 'pending') return;
-      var res = resMap[bet.matchID];
-      if (!res || !res.finished) return;
-      var out = evaluateTip(bet.tipId, res.g1, res.g2);
-      if (out) { bet.outcome = out; changed++; }
+// Bewertet offene Wetten pro beendetem Spiel anhand frisch geladener, vollständiger Ergebnisse.
+function trackerAutoGrade(cb){
+  if (typeof getSlips !== 'function' || typeof gFetchResMap !== 'function') { if(cb) cb(0); return; }
+  var lgId = ACTIVE_LEAGUE ? ACTIVE_LEAGUE.id : 'bl1';
+  gFetchResMap(lgId).then(function(resMap){
+    if (!resMap || !Object.keys(resMap).length) { if(cb) cb(0); return; }
+    var slips = getSlips(), changed = 0;
+    slips.forEach(function(slip){
+      (slip.bets||[]).forEach(function(bet){
+        if (bet.outcome && bet.outcome !== 'pending') return;
+        var res = resMap[bet.matchID];
+        if (!res || !res.finished) return;
+        var out = evaluateTip(bet.tipId, res.g1, res.g2);
+        if (out) { bet.outcome = out; changed++; }
+      });
     });
-  });
-  if (changed){ saveSlips(slips); renderSubmittedSlips(); }
-  return changed;
+    if (changed){ saveSlips(slips); renderSubmittedSlips(); }
+    if (cb) cb(changed);
+  }).catch(function(){ if(cb) cb(0); });
 }
 function startTrackerSettleTimer(){
   stopTrackerSettleTimer();
-  window.TRACKER_SETTLE_TIMER = setInterval(function(){
-    var ref = (typeof loadCurrentLeague === 'function')
-      ? loadCurrentLeague().then(function(){ if(typeof renderMatches==='function') renderMatches(); }).catch(function(){})
-      : Promise.resolve();
-    ref.then(function(){ trackerAutoGrade(); });
-  }, 3 * 60 * 1000);
+  window.TRACKER_SETTLE_TIMER = setInterval(function(){ trackerAutoGrade(); }, 3 * 60 * 1000);
 }
 function stopTrackerSettleTimer(){
   if (window.TRACKER_SETTLE_TIMER){ clearInterval(window.TRACKER_SETTLE_TIMER); window.TRACKER_SETTLE_TIMER = null; }
@@ -3870,7 +3857,19 @@ var REQUIRE_INVITE_CODE        = true;  // true = Registrierung nur mit gültige
 // UIDs der Betreiber: dürfen Einladungscodes erzeugen und benötigen selbst
 // weder Code noch E-Mail-Bestätigung. Eigene UID eintragen, z. B. ['csOI9I7jS0...']
 var ADMIN_UIDS = [];
-function isAdminUser(){ return !!(FB_USER && ADMIN_UIDS.indexOf(FB_USER.uid) >= 0); }
+// Alternativ/zusätzlich: Betreiber per E-Mail (bequemer als UID). Genau die E-Mail eintragen,
+// mit der du registriert bist. Admins sehen den Code-Generator und brauchen weder Code noch
+// E-Mail-Bestätigung.
+var ADMIN_EMAILS = ['michael.matteo.meissner@googlemail.com'];
+function isAdminAccount(user){
+  if(!user) return false;
+  if(user.uid && ADMIN_UIDS.indexOf(user.uid) >= 0) return true;
+  var em = (user.email || '').trim().toLowerCase();
+  if(!em) return false;
+  for(var i=0;i<ADMIN_EMAILS.length;i++){ if((ADMIN_EMAILS[i]||'').trim().toLowerCase() === em) return true; }
+  return false;
+}
+function isAdminUser(){ return isAdminAccount(FB_USER); }
 // HINWEIS: Diese Texte durch deine echten AGB / Datenschutzrichtlinie ersetzen.
 var LEGAL_HTML = {
   impressum: `
@@ -4171,7 +4170,7 @@ function initFirebaseAuth() {
       saveSession({ name: G_ME, uid: user.uid, email: user.email });
       localStorage.setItem('kap_g2_my_name', G_ME);
       // E-Mail-Bestätigung erzwingen (Admins ausgenommen)
-      if (REQUIRE_EMAIL_VERIFICATION && !user.emailVerified && ADMIN_UIDS.indexOf(user.uid) < 0) {
+      if (REQUIRE_EMAIL_VERIFICATION && !user.emailVerified && !isAdminAccount(user)) {
         if (REG_CONSENT_PENDING) { REG_CONSENT_PENDING = false; saveConsent(user.uid); upsertProfile(user.uid, G_ME, user.email); }
         if (el('agVerifyEmail')) el('agVerifyEmail').textContent = user.email || '';
         showAuthGate('verify');
@@ -4204,9 +4203,9 @@ function fbAuthError(code) {
     'auth/email-already-in-use':    'Diese E-Mail-Adresse wird bereits verwendet.',
     'auth/invalid-email':           'Ungültige E-Mail-Adresse.',
     'auth/weak-password':           'Passwort muss mindestens 6 Zeichen haben.',
-    'auth/user-not-found':          'Kein Konto mit dieser E-Mail gefunden.',
+    'auth/user-not-found':          'Kein Konto mit dieser E-Mail gefunden. Falls du neu bist, bitte zuerst registrieren.',
     'auth/wrong-password':          'Falsches Passwort.',
-    'auth/invalid-credential':      'E-Mail oder Passwort falsch.',
+    'auth/invalid-credential':      'E-Mail oder Passwort falsch. Falls du noch kein Konto hast, tippe oben auf „Registrieren".',
     'auth/too-many-requests':       'Zu viele Versuche. Bitte kurz warten.',
     'auth/network-request-failed':  'Keine Internetverbindung.',
     'auth/popup-closed-by-user':    'Anmeldung abgebrochen.',
@@ -4793,68 +4792,15 @@ function showGroupsScreen() {
   var pemail = el('gsProfileEmail');
   if (pemail && FB_USER) pemail.textContent = FB_USER.email;
 
-  // Admin-Panel (Einladungscodes) nur für Betreiber (ADMIN_UIDS)
-  var aip = el('adminInvitePanel');
-  if (aip) {
-    if (isAdminUser()) { aip.style.display = 'block'; loadInvites(); }
-    else aip.style.display = 'none';
-  }
   renderGroupList();
   // Mitgliedschaften geräteübergreifend nachladen und Liste aktualisieren
   syncUserGroups(function(changed) { if (changed) renderGroupList(); });
 }
 
-// ── Einladungscodes (Admin) ──────────────────────────────────────────
-function generateInvites(){
-  if(!isAdminUser()){ showError('Nur für Betreiber.'); return; }
-  var n = parseInt((el('invCount')&&el('invCount').value)||'10', 10);
-  if(isNaN(n)||n<1) n=1; if(n>100) n=100;
-  var codes = [];
-  for(var i=0;i<n;i++){ codes.push(genCode()); }
-  showInfo('Erzeuge ' + n + ' Codes…');
-  // Jeden Code als "unbenutzt" (false) anlegen
-  Promise.all(codes.map(function(c){
-    return fbSetAuth('invites/' + c, false).then(function(){ return true; }).catch(function(){ return false; });
-  })).then(function(res){
-    var ok = res.filter(function(x){return x;}).length;
-    if(ok===0){ showError('Codes konnten nicht erstellt werden. Prüfe die Firebase-Regeln für "invites" und deine ADMIN-UID.'); }
-    else showSuccess(ok + ' Einladungscode(s) erstellt.');
-    loadInvites();
-  });
-}
-function loadInvites(){
-  var list = el('invList'); if(!list) return;
-  list.textContent = 'Lädt…';
-  fbGetAuth('invites').then(function(all){
-    renderInviteList(all||{});
-  }).catch(function(e){
-    list.textContent = '';
-    var m=(e&&e.message)||'';
-    list.appendChild(document.createTextNode(
-      (m.indexOf('401')>=0||m.indexOf('403')>=0) ? 'Kein Zugriff auf "invites" – Firebase-Regeln prüfen.' : 'Konnte Codes nicht laden.'));
-  });
-}
-function renderInviteList(all){
-  var list = el('invList'); if(!list) return;
-  list.innerHTML = '';
-  var codes = Object.keys(all||{});
-  if(!codes.length){ list.appendChild(document.createTextNode('Noch keine Codes. Oben welche erzeugen.')); return; }
-  // Unbenutzte zuerst
-  codes.sort(function(a,b){ var ua=all[a]===false, ub=all[b]===false; return (ua===ub)?0:(ua?-1:1); });
-  var open=0;
-  codes.forEach(function(c){
-    var used = all[c] !== false;
-    if(!used) open++;
-    var row = document.createElement('div');
-    row.style.cssText='display:flex;justify-content:space-between;gap:.5rem;padding:.18rem 0;border-bottom:1px solid var(--bo)';
-    var left=document.createElement('span'); left.textContent=c; left.style.cssText = used?'opacity:.45;text-decoration:line-through':'color:var(--win)';
-    var right=document.createElement('span'); right.textContent = used?'benutzt':'frei'; right.style.cssText='font-size:.62rem;color:'+(used?'var(--tx3)':'var(--win)');
-    row.appendChild(left); row.appendChild(right); list.appendChild(row);
-  });
-  var sum=document.createElement('div'); sum.style.cssText='margin-top:.4rem;font-size:.66rem;color:var(--tx2)';
-  sum.textContent = open + ' frei · ' + (codes.length-open) + ' benutzt · ' + codes.length + ' gesamt';
-  list.appendChild(sum);
-}
+// ── Einladungscodes ──────────────────────────────────────────────────
+// Hinweis: Der frühere In-App-Code-Generator wurde entfernt. Einmal-Codes
+// werden direkt in Firebase unter "invites" gepflegt (Wert false = frei,
+// eine UID = benutzt). Das Einlösen beim Registrieren erfolgt automatisch.
 
 function renderGroupList() {
   var list = el('gsGroupList');
@@ -6028,17 +5974,48 @@ function gGradeSlips(grp, resMap) {
 }
 
 // Auswertung aus frisch geladenen Spielen – läuft pro beendetem Spiel, ohne festen Spieltag.
+// Ergebnis-Map aus einem beliebigen Spiel-Array (nur beendete Spiele mit Endergebnis)
+function gResMapFrom(arr) {
+  var map = {};
+  (arr || []).forEach(function(m){
+    if (!m || !m.matchIsFinished) return;
+    var r = null;
+    if (m.matchResults && m.matchResults.length) {
+      for (var i=0;i<m.matchResults.length;i++){ if(m.matchResults[i].resultTypeID===2){ r=m.matchResults[i]; break; } }
+      if (!r) r = m.matchResults[m.matchResults.length-1];
+    }
+    if (r && r.pointsTeam1!=null && r.pointsTeam2!=null) map[m.matchID] = { g1:r.pointsTeam1, g2:r.pointsTeam2, finished:true };
+  });
+  return map;
+}
+
+// Lädt die ECHTEN, VOLLSTÄNDIGEN Ergebnisse der jeweiligen Liga (inkl. bereits beendeter Spiele).
+// Wichtig: ST.matches/matchesCur enthalten nur kommende Spiele – daher hier frisch nachladen.
+function gFetchResMap(leagueId) {
+  var lg = null;
+  if (leagueId && typeof LEAGUES !== 'undefined') lg = LEAGUES.find(function(l){ return l.id === leagueId; });
+  if (!lg) lg = ACTIVE_LEAGUE;
+  try {
+    if (lg && lg.source === 'openligadb') {
+      var season = ST.curSeason || (typeof curSeason === 'function' ? curSeason() : null);
+      return apiFetch('/getmatchdata/' + lg.shortcut + '/' + season)
+        .then(function(all){ return gResMapFrom(all); })
+        .catch(function(){ return gBuildResMap(); });
+    }
+    if (lg && lg.source === 'openfootball' && typeof loadWMData === 'function') {
+      return loadWMData()
+        .then(function(all){ return gResMapFrom(all); })
+        .catch(function(){ return gBuildResMap(); });
+    }
+  } catch(_) {}
+  return Promise.resolve(gBuildResMap());
+}
+
 function gSettleLoaded(onDone) {
   if (!GRP) { if (onDone) onDone(0); return; }
-  // Erst aktuelle Ergebnisse der Gruppenliga nachladen, dann auswerten.
-  var refresh;
-  try {
-    refresh = (typeof loadCurrentLeague === 'function')
-      ? loadCurrentLeague().then(function(){ if (typeof renderMatches === 'function') renderMatches(); }).catch(function(){})
-      : Promise.resolve();
-  } catch(_) { refresh = Promise.resolve(); }
-  refresh.then(function(){
-    var resMap = gBuildResMap();
+  window._lastSettleRun = Date.now(); // verhindert Doppellauf über refreshGroupUI -> gCheckAutoSettle
+  gFetchResMap(GRP.leagueId).then(function(resMap){
+    if (!resMap || !Object.keys(resMap).length) { if (onDone) onDone(0); return; }
     var p = G_FB_URL ? fbGetAuth('groups/' + GRP.code) : Promise.resolve(loadGrpLocal(GRP.code));
     return p.then(function(freshGrp){
       freshGrp = (freshGrp && typeof freshGrp === 'object') ? freshGrp : GRP;
@@ -6057,19 +6034,15 @@ function gSettleLoaded(onDone) {
 }
 
 function gCheckAutoSettle() {
-  if (!GRP || !ST.matchesCur || !ST.matchesCur.length) return;
-  // Nur Ersteller/Admin (oder reiner Lokalmodus) rechnet automatisch ab -> verhindert
-  // Doppel-Auszahlungen, wenn mehrere Geräte gleichzeitig auswerten würden.
-  var maySettle = !G_FB_URL || isAdminUser() || !GRP.creatorUid || (FB_USER && FB_USER.uid === GRP.creatorUid);
-  if (!maySettle) return;
-  // Auslösen, sobald mindestens ein Spiel beendet ist UND es noch offene Scheine gibt.
-  var anyFinished = [ST.matchesCur, ST.matches].some(function(arr){ return arr && arr.some(function(m){ return m && m.matchIsFinished; }); });
-  if (!anyFinished) return;
+  if (!GRP) return;
+  // Auswerten, sobald es noch offene Scheine gibt. Die echten Ergebnisse werden in
+  // gSettleLoaded frisch geladen (auch bereits beendete Spiele). Mehrfaches Auswerten
+  // ist gefahrlos: Bereits abgeschlossene Scheine werden nie erneut ausgezahlt.
   var hasPending = (GRP.slips || []).some(function(s){ return !s.result || s.result === 'pending'; });
   if (!hasPending) return;
-  // Nicht häufiger als alle 90 Sekunden tatsächlich rechnen (schont Netz, verhindert Re-Entry).
+  // Nicht häufiger als alle 60 Sekunden tatsächlich rechnen (schont Netz, verhindert Re-Entry).
   var now = Date.now();
-  if (window._lastSettleRun && (now - window._lastSettleRun) < 90 * 1000) return;
+  if (window._lastSettleRun && (now - window._lastSettleRun) < 60 * 1000) return;
   window._lastSettleRun = now;
   gSettleLoaded(function(settled){
     if (settled > 0 && typeof console !== 'undefined') console.log('Auto-Auswertung: ' + settled + ' Wette(n) ausgewertet');
@@ -6079,25 +6052,14 @@ function gCheckAutoSettle() {
 // Admin: manuell auswerten
 function adminSettleNow() {
   if (!isAdmin()) return;
-  var md = ST.curMD;
-  if (!md) { showError('Spieltag nicht geladen.'); return; }
-
   var adminBox = el('aSettleStatus');
   if (adminBox) { adminBox.textContent = 'Lade Ergebnisse…'; adminBox.style.display = 'block'; adminBox.style.color = 'var(--draw)'; }
-
-  doSettleMatchday(md, function(settled, finished, err, total) {
-    if (err) {
-      if (adminBox) { adminBox.textContent = 'Fehler: ' + err; adminBox.style.color = 'var(--loss)'; }
-      return;
+  gSettleLoaded(function(settled){
+    if (adminBox) {
+      var openLeft = (GRP.slips || []).some(function(s){ return !s.result || s.result === 'pending'; });
+      if (settled > 0) { adminBox.textContent = settled + ' Wette(n) ausgewertet.' + (openLeft ? ' Es laufen noch Spiele.' : ''); adminBox.style.color = 'var(--win)'; }
+      else { adminBox.textContent = openLeft ? 'Noch keine neuen Ergebnisse – Spiele evtl. noch nicht beendet.' : 'Alles bereits ausgewertet.'; adminBox.style.color = 'var(--tx2)'; }
     }
-    var msg = '';
-    if (finished < total) {
-      msg = 'Noch nicht alle Spiele beendet (' + finished + '/' + total + ').';
-      if (settled > 0) msg += ' ' + settled + ' Wetten ausgewertet.';
-    } else {
-      msg = 'Auswertung abgeschlossen. ' + settled + ' Wetten ausgewertet.';
-    }
-    if (adminBox) { adminBox.textContent = msg; adminBox.style.color = settled > 0 ? 'var(--win)' : 'var(--tx2)'; }
   });
 }
 
